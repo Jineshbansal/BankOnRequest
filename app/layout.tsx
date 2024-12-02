@@ -1,8 +1,8 @@
 'use client';
 import { Poppins } from 'next/font/google';
-import './globals.css';
+import '@/styles/globals.css';
 import { init, Web3OnboardProvider } from '@web3-onboard/react';
-import { onboardConfig, config } from '../utils/connectWallet';
+import { onboardConfig, wagmiConfig } from '../utils/connectWallet';
 import { WagmiProvider } from 'wagmi';
 import { Provider } from '@/utils/context';
 
@@ -20,10 +20,14 @@ const poppins = Poppins({
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang='en' className={poppins.className}>
+    <html
+      lang='en-GB'
+      style={{ filter: 'invert(0)' }}
+      className={poppins.className}
+    >
       <body>
         <Web3OnboardProvider web3Onboard={web3Onboard}>
-          <WagmiProvider config={config}>
+          <WagmiProvider config={wagmiConfig}>
             <Provider>{children}</Provider>
           </WagmiProvider>
         </Web3OnboardProvider>

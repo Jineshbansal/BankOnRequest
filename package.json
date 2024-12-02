@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@requestnetwork/create-invoice-form": "^0.11.3",
+    "@requestnetwork/invoice-dashboard": "^0.11.1",
     "@requestnetwork/request-client.js": "^0.50.0",
     "@requestnetwork/shared": "^0.4.0",
     "@requestnetwork/web3-signature": "^0.8.1",

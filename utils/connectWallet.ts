@@ -57,7 +57,7 @@ export const onboardConfig = {
   },
 };
 
-export const config = createConfig({
+export const wagmiConfig = createConfig({
   chains: [polygon, mainnet, sepolia],
   transports: {
     [mainnet.id]: http(),

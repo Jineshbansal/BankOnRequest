@@ -2,6 +2,7 @@
 import React, { FC, useEffect, useState } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
 import { ethers } from 'ethers';
+import Link from 'next/link';
 
 const Navbar: FC = () => {
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
@@ -21,14 +22,23 @@ const Navbar: FC = () => {
 
   return (
     <nav className='w-full bg-[#038962] p-4 flex justify-between items-center'>
-      <div className='text-white text-2xl font-bold'>BankOnRequest</div>
-      <button
-        className='bg-white text-[#038962] px-4 py-2 rounded-lg shadow-md hover:bg-gray-200'
-        disabled={connecting}
-        onClick={() => (wallet ? disconnect(wallet) : connect())}
-      >
-        {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect'}
-      </button>
+      <Link href='/' className='text-white text-2xl font-bold'>
+        BankOnRequest
+      </Link>
+      <div className='flex items-center mr-5'>
+        {wallet && (
+          <Link href='/dashboard' className='text-white text-xl mr-4'>
+            Dashboard
+          </Link>
+        )}
+        <button
+          className='bg-white text-[#038962] px-4 py-2 rounded-lg shadow-md hover:bg-gray-200'
+          disabled={connecting}
+          onClick={() => (wallet ? disconnect(wallet) : connect())}
+        >
+          {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect'}
+        </button>
+      </div>
     </nav>
   );
 };

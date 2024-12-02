@@ -1,5 +1,6 @@
 import Navbar from '@/components/Navbar';
 import React from 'react';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'BankOnRequest',
@@ -22,14 +23,15 @@ const Home: React.FC = () => {
         </p>
       </header>
       <section className='w-full max-w-4xl flex flex-col md:flex-row justify-around items-center'>
-        <div className='feature bg-white p-6 rounded-lg shadow-md m-4 cursor-pointer'>
-          <h2 className='text-2xl font-semibold text-[#038962]'>
-            Create Request
-          </h2>
+        <Link
+          href='/create-invoice'
+          className='feature bg-white p-6 rounded-lg shadow-md m-4 cursor-pointer'
+        >
+          <h2 className='text-2xl font-semibold text-[#038962]'>Lend Money</h2>
           <p className='text-gray-600'>
             Earn interest by lending your assets to our secure pool.
           </p>
-        </div>
+        </Link>
         <div className='feature bg-white p-6 rounded-lg shadow-md m-4'>
           <h2 className='text-2xl font-semibold text-[#038962]'>
             Borrow Money

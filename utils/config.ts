@@ -2,7 +2,7 @@ import { IConfig } from '@requestnetwork/shared';
 
 export const config: IConfig = {
   builderId: 'bankonrequest',
-  dashboardLink: '/',
+  dashboardLink: '/dashboard',
   logo: '/peer-to-peer.png',
   colors: {
     main: '#0BB489',

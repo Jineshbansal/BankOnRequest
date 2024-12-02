@@ -1,9 +1,13 @@
 'use client';
 import('@requestnetwork/create-invoice-form');
+import CreateInvoiceForm from '@requestnetwork/create-invoice-form/react';
 import { useEffect, useRef } from 'react';
 import { config } from '@/utils/config';
 import { useAppContext } from '@/utils/context';
 import { CreateInvoiceFormProps } from '@/types';
+import Navbar from '@/components/Navbar';
+import { currencies } from '@/utils/currencies';
+import { wagmiConfig } from '@/utils/connectWallet';
 
 export default function CreateInvoice() {
   const formRef = useRef<CreateInvoiceFormProps>(null);
@@ -16,15 +20,24 @@ export default function CreateInvoice() {
       if (wallet && requestNetwork) {
         formRef.current.signer = wallet.accounts[0].address;
         formRef.current.requestNetwork = requestNetwork;
+        formRef.current.wagmiConfig = wagmiConfig;
+        // console.log(formRef.current.signer);
       }
     }
   }, [wallet, requestNetwork]);
 
   return (
-    <div className='py-14'>
-      <div className='container m-auto  w-[100%]'>
+    <>
+      <Navbar />
+      <div className='container m-auto  w-[100%] py-5'>
+        {/* <CreateInvoiceForm
+          config={config}
+          currencies={currencies}
+          wagmiConfig={wconfig}
+          requestNetwork={requestNetwork}
+        /> */}
         <create-invoice-form ref={formRef} />
       </div>
-    </div>
+    </>
   );
 }
