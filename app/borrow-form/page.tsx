@@ -10,7 +10,7 @@ import { ethers } from "ethers";
 const App = () => {
   const [currency, setCurrency] = useState("0x1d87Fc9829d03a56bdb5ba816C2603757f592D82");
   const [network, setNetwork] = useState("sepolia");
-  const [expectedAmount, setExpectedAmount] = useState("1011");
+  const [expectedAmount, setExpectedAmount] = useState("1");
   const [paymentNetworkName, setPaymentNetworkName] = useState("sepolia");
   const [feeRecipient, setFeeRecipient] = useState("");
   const [feeAmount, setFeeAmount] = useState("0");
@@ -26,7 +26,7 @@ const App = () => {
     event.preventDefault();
     console.log("payeeIdentity:",payeeIdentity);
     console.log("payerIdentity:",payerIdentity);
-
+    const loanAmount = ethers.utils.parseUnits(expectedAmount, 18);
     const requestCreateParameters = {
       requestInfo: {
         currency: {
@@ -34,7 +34,7 @@ const App = () => {
           value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
           network: 'sepolia',
         },
-        expectedAmount: expectedAmount,
+        expectedAmount: loanAmount,
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: payeeIdentity,
@@ -236,7 +236,7 @@ const App = () => {
     const contractAddress=process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     const tokenAddress="0x1d87Fc9829d03a56bdb5ba816C2603757f592D82"
-    const data = await contract.callTransferWithFee(tokenAddress, payeeIdentity, expectedAmount, payref); 
+    const data = await contract.callTransferWithFee(tokenAddress, payeeIdentity, loanAmount, payref); 
     await data.wait();
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
