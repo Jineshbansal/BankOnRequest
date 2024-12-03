@@ -31,6 +31,11 @@ const Navbar: FC = () => {
             Dashboard
           </Link>
         )}
+        {wallet && (
+          <Link href='/custom-dashboard' className='text-white text-xl mr-4'>
+            Custom Dash
+          </Link>
+        )}
         <button
           className='bg-white text-[#038962] px-4 py-2 rounded-lg shadow-md hover:bg-gray-200'
           disabled={connecting}

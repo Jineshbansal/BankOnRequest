@@ -7,6 +7,7 @@ const App = () => {
   const [{ wallet }] = useConnectWallet();
   console.log(wallet?.accounts[0].address);
   const submitHandler = (event: React.FormEvent) => {
+    event.preventDefault();
     alert('Form is clicked');
     console.log(inputValue);
   };
