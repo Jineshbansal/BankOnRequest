@@ -7,6 +7,8 @@ import { useConnectWallet } from '@web3-onboard/react';
 import { RequestNetwork, Types } from '@requestnetwork/request-client.js';
 import { wagmiConfig } from '@/utils/connectWallet';
 import Navbar from '@/components/Navbar';
+import { ethers } from "ethers";
+import { Address } from 'viem';
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -78,10 +80,11 @@ export default function InvoiceDashboard() {
 
           setDepositedMoney(depositedMoneyTemp);
           console.log('depositedMoney', depositedMoneyTemp);
+            console.log('requestDatas', requestDatas);
         });
     }
   }, [wallet, requestNetwork]);
-
+  
   return (
     <div className='container m-auto w-[100%] h-screen'>
       <Navbar />
@@ -112,6 +115,7 @@ export default function InvoiceDashboard() {
                     </button>
                   )}
                 </td>
+                
               </tr>
             ))}
           </tbody>

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
-import { providers,utils } from "ethers";
+import { BigNumber, providers,utils } from "ethers";
 import { Web3SignatureProvider } from "@requestnetwork/web3-signature";
 import { RequestNetwork,PaymentReferenceCalculator } from "@requestnetwork/request-client.js"
 import { ethers } from "ethers";
@@ -17,8 +17,8 @@ const App = () => {
   const [reason, setReason] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [{ wallet }] = useConnectWallet();
-  const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-  const payerIdentity = wallet?.accounts[0].address;
+  const payerIdentity = "0xEee3f751e7A044243a407F14e43f69236e12f748";
+  const payeeIdentity = wallet?.accounts[0].address;
   console.log("payeeIdentity:",payeeIdentity);
   console.log("payerIdentity:",payerIdentity);
 
@@ -26,6 +26,7 @@ const App = () => {
     event.preventDefault();
     console.log("payeeIdentity:",payeeIdentity);
     console.log("payerIdentity:",payerIdentity);
+
     const requestCreateParameters = {
       requestInfo: {
         currency: {
@@ -59,7 +60,7 @@ const App = () => {
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payerIdentity,
+        value: payeeIdentity,
       },
     };
     const provider = new providers.Web3Provider(window.ethereum);
@@ -84,7 +85,6 @@ const App = () => {
     const request = await requestClient.createRequest(requestCreateParameters);
 
     const confirmedRequestData = await request.waitForConfirmation();
-
     const requestID = confirmedRequestData.requestId;
     const salt = confirmedRequestData.extensions["pn-erc20-fee-proxy-contract"].values.salt;
 
@@ -250,7 +250,7 @@ const App = () => {
         onSubmit={submitHandler}
         className="w-full max-w-lg bg-white shadow-lg rounded-lg p-8"
       >
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Create a Payment Request</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Take a loan</h1>
 
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">Expected Amount:</label>
