@@ -9,15 +9,16 @@ import {
   PaymentReferenceCalculator,
 } from '@requestnetwork/request-client.js';
 import { ethers } from 'ethers';
-import contractABI from '@/utils/contractAbiBorrower';
+import contractABI from '@/utils/contractAbi';
 import Navbar from '@/components/Navbar';
 import Input from '@/components/input';
+import checkAndApproveToken from '@/utils/checkAndApproveToken';
 
 const App = () => {
-  const [borrowingToken, setBorrowingToken] = useState('');
-  const [borrowingAmount, setBorrowingAmount] = useState('');
-  const [collateralToken, setCollateralToken] = useState('');
-  const [collateralAmount, setCollateralAmount] = useState('');
+  const [borrowingToken, setBorrowingToken] = useState('0x1d87Fc9829d03a56bdb5ba816C2603757f592D82');
+  const [borrowingAmount, setBorrowingAmount] = useState('1');
+  const [collateralToken, setCollateralToken] = useState('0xA74b9F8a20dfACA9d7674FeE0697eE3518567248');
+  const [collateralAmount, setCollateralAmount] = useState('1');
   const [description, setDescription] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -29,7 +30,7 @@ const App = () => {
   const [issuedDate, setIssuedDate] = useState('');
 
   const [{ wallet }] = useConnectWallet();
-  const payerIdentity = '0xEee3f751e7A044243a407F14e43f69236e12f748';
+  const payerIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
   const payeeIdentity = wallet?.accounts[0].address;
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
@@ -43,7 +44,9 @@ const App = () => {
     event.preventDefault();
     console.log('payeeIdentity:', payeeIdentity);
     console.log('payerIdentity:', payerIdentity);
+
     const loanAmount = ethers.utils.parseUnits(borrowingAmount, 18);
+    const giveAmount = ethers.utils.parseUnits(collateralAmount, 18);
     const requestCreateParameters = {
       requestInfo: {
         currency: {
@@ -51,7 +54,7 @@ const App = () => {
           value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
           network: 'sepolia',
         },
-        expectedAmount: loanAmount,
+        expectedAmount: loanAmount.toString(),
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: payeeIdentity,
@@ -72,7 +75,7 @@ const App = () => {
         },
       },
       contentData: {
-        reason: description,
+        reason: description ,
         dueDate: '2023.06.16',
       },
       signer: {
@@ -97,6 +100,14 @@ const App = () => {
       },
       signatureProvider: web3SignatureProvider,
     });
+    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
+    const collateralTokenAddress='0xA74b9F8a20dfACA9d7674FeE0697eE3518567248';
+    await checkAndApproveToken(
+      collateralTokenAddress,
+      payeeIdentity,
+      provider,
+      giveAmount.toString()+"0"
+    );
     console.log('request Client:', requestClient);
     console.log('request create parameters', requestCreateParameters);
     const request = await requestClient.createRequest(requestCreateParameters);
@@ -107,11 +118,7 @@ const App = () => {
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
         .salt;
 
-    const paymentReference = PaymentReferenceCalculator.calculate(
-      requestID,
-      salt,
-      payeeIdentity
-    );
+    const paymentReference = PaymentReferenceCalculator.calculate(requestID,salt,payeeIdentity);
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     alert('Wallet connected successfully!');
@@ -121,18 +128,13 @@ const App = () => {
     console.log('payref', payref);
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
-    const data = await contract.callTransferWithFee(
-      tokenAddress,
-      payeeIdentity,
-      loanAmount,
-      payref
-    );
-    await data.wait();
-    console.log('payerIdentity', payerIdentity);
-    console.log('payeeIdentity', payeeIdentity);
-    console.log('data', data.hash);
-    alert('Form submitted successfully');
+    console.log('contractABI', contractABI);
+    const data = await contract.borrowcallTransferWithFee(loanAmount,giveAmount,payref);
+    // await data.wait();
+    // console.log('payerIdentity', payerIdentity);
+    // console.log('payeeIdentity', payeeIdentity);
+    // console.log('data', data.hash);
+    // alert('Form submitted successfully');
   };
 
   const downloadInvoice = () => {

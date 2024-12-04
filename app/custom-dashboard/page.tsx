@@ -13,6 +13,7 @@ import contractABI from '@/utils/contractAbi';
 import { providers, utils } from 'ethers';
 import { Types, Utils , PaymentReferenceCalculator} from '@requestnetwork/request-client.js';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
+import checkAndApproveToken from '@/utils/checkAndApproveToken';
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -27,11 +28,9 @@ export default function InvoiceDashboard() {
   const [depositedMoney, setDepositedMoney] = useState<{ [key: string]: number }>(
     {}
   );
+  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
   const handleWithdraw = async() => {
     console.log('withdraw');
-    const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-    console.log('contractAddress:', contractAddress);
-
     const provider = new providers.Web3Provider(window.ethereum);
     const accounts = await provider.send('eth_accounts', []);
     console.log('Accounts:', accounts);
@@ -113,6 +112,98 @@ export default function InvoiceDashboard() {
     console.log('payeeIdentity', payeeIdentity);
     console.log('data', data.hash);
     alert('Form submitted successfully');
+
+  };
+
+  const handleDeposit = async() => {
+    console.log('deposit');
+    const provider = new providers.Web3Provider(window.ethereum);
+    const accounts = await provider.send('eth_accounts', []);
+    console.log('Accounts:', accounts);
+    const payerIdentity = wallet?.accounts[0].address;
+    const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const loanAmount=await contract.amount_borrow()
+    console.log('loanAmount', loanAmount);
+    if(loanAmount==0){alert("you donot loan any money from us");return;}
+
+    const requestCreateParameters = {
+      requestInfo: {
+        currency: {
+          type: Types.RequestLogic.CURRENCY.ERC20,
+          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
+          network: 'sepolia',
+        },
+        expectedAmount: loanAmount.toString(),
+        payee: {
+          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+          value: payeeIdentity,
+        },
+        payer: {
+          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+          value: payerIdentity,
+        },
+        timestamp: Utils.getCurrentTimestampInSecond(),
+      },
+      paymentNetwork: {
+        id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
+        parameters: {
+          paymentNetworkName: 'sepolia',
+          paymentAddress: payeeIdentity,
+          feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
+          feeAmount: '0',
+        },
+      },
+      contentData: {
+        reason: "deposit",
+        dueDate: '2023.06.16',
+      },
+      signer: {
+        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+        value: payerIdentity,
+      },
+    };
+    
+
+    const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
+    const requestClient = new RequestNetwork({
+      nodeConnectionConfig: {
+        baseURL: 'https://gnosis.gateway.request.network/',
+      },
+      signatureProvider: web3SignatureProvider,
+    });
+    const request = await requestClient.createRequest(requestCreateParameters);
+    const confirmedRequestData = await request.waitForConfirmation();
+    const requestID = confirmedRequestData.requestId;
+    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
+    const salt =
+      confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
+        .salt;
+    const paymentReference = PaymentReferenceCalculator.calculate(
+      requestID,
+      salt,
+      payeeIdentity
+    );
+    console.log('paymentReferenceCalculator', paymentReference);
+    console.log('confirmed Request Data:', confirmedRequestData);
+    console.log('Request Parameters:', requestCreateParameters);
+    await checkAndApproveToken(
+      tokenAddress,
+      payerIdentity,
+      provider,
+      loanAmount.toString()+"0"
+    );
+    const payref = '0x' + paymentReference;
+    console.log('payref', payref);
+    const data = await contract.repayLoan(payref);
+    await data.wait();
+    console.log('payerIdentity', payerIdentity);
+    console.log('payeeIdentity', payeeIdentity);
+    console.log('data', data.hash);
+    alert('Form submitted successfully');
+
 
   };
 
@@ -203,7 +294,8 @@ export default function InvoiceDashboard() {
                       Withdraw
                     </button>
                   ) : (
-                    <button className='bg-blue-500 text-white py-1 px-2 rounded'>
+                    <button className='bg-blue-500 text-white py-1 px-2 rounded'
+                    onClick={handleDeposit}>
                       Deposit
                     </button>
                   )}

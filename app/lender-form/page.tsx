@@ -111,7 +111,7 @@ const App = () => {
       tokenAddress,
       payerIdentity,
       provider,
-      loanAmount
+      loanAmount.toString()+"0"
     );
     const payref = '0x' + paymentReference;
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
