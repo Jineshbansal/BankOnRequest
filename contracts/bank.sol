@@ -38,12 +38,10 @@ contract Bank {
         address feeRecipient
     );
 
-    // The `receive` function is called when the contract receives Ether without data
     receive() external payable {
         emit PaymentReceived(msg.sender, msg.value);
     }
 
-    // The `fallback` function is called when the contract receives Ether with data or no matching function exists
     fallback() external payable {
         emit PaymentReceived(msg.sender, msg.value);
     }
@@ -65,7 +63,7 @@ contract Bank {
     }
 
     // Function to call transferFromWithReferenceAndFee on the IERC20FeeProxy
-    function callTransferWithFee(
+    function borrowcallTransferWithFee(
         address tokenAddress,
         address recipient,
         uint256 amount,
