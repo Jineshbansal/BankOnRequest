@@ -24,7 +24,7 @@ const Home: React.FC = () => {
       </header>
       <section className='w-full max-w-4xl flex flex-col md:flex-row justify-around items-center'>
         <Link
-          href='/create-invoice'
+          href='/lender-form'
           className='feature bg-white p-6 rounded-lg shadow-md m-4 cursor-pointer'
         >
           <h2 className='text-2xl font-semibold text-[#038962]'>Lend Money</h2>
@@ -32,14 +32,17 @@ const Home: React.FC = () => {
             Earn interest by lending your assets to our secure pool.
           </p>
         </Link>
-        <div className='feature bg-white p-6 rounded-lg shadow-md m-4'>
+        <Link
+          href='/borrow-form'
+          className='feature bg-white p-6 rounded-lg shadow-md m-4 curson-pointer'
+        >
           <h2 className='text-2xl font-semibold text-[#038962]'>
             Borrow Money
           </h2>
           <p className='text-gray-600'>
             Access funds quickly and easily from our decentralized pool.
           </p>
-        </div>
+        </Link>
       </section>
       <footer className='mt-8 text-gray-600'>
         <p>Powered by Request Network</p>
