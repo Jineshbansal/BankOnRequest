@@ -51,7 +51,7 @@ const App = () => {
           value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
           network: 'sepolia',
         },
-        expectedAmount: lendAmount.toString(),
+        expectedAmount: loanAmount.toString(),
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: payeeIdentity,
@@ -111,14 +111,14 @@ const App = () => {
       tokenAddress,
       payerIdentity,
       provider,
-      lendAmount
+      loanAmount
     );
     const payref = '0x' + paymentReference;
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     console.log('contractAddress:', contractAddress);
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const data = await contract.depositcallTransferWithFee(lendAmount,payref);
+    const data = await contract.depositcallTransferWithFee(loanAmount, payref);
     await data.wait();
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
