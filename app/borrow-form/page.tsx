@@ -143,7 +143,7 @@ const App = () => {
     const paymentReference = PaymentReferenceCalculator.calculate(
       requestID,
       salt,
-      payeeIdentity
+      payeeIdentity ?? ''
     );
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
@@ -152,7 +152,8 @@ const App = () => {
 
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
-    const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+    const contractAddress =
+      process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
     await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);

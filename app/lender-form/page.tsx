@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
-import { providers} from 'ethers';
+import { providers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import {
   RequestNetwork,
@@ -29,13 +29,17 @@ const App = () => {
   const [address, setAddress] = useState('');
   const [issuedDate, setIssuedDate] = useState('');
   const [{ wallet }] = useConnectWallet();
-  const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+  const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
   const payerIdentity = wallet?.accounts[0].address;
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
 
   useEffect(() => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
     console.log(Utils.getCurrentTimestampInSecond());
   }, []);
@@ -52,7 +56,7 @@ const App = () => {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: lendingToken,
           token: tokenOptions[lendingToken],
-          network: 'sepolia',
+          network: 'sepolia' as Types.RequestLogic.ICurrency['network'],
         },
         expectedAmount: loanAmount.toString(),
         payee: {
@@ -114,12 +118,13 @@ const App = () => {
     console.log('Request Parameters:', requestCreateParameters);
     await checkAndApproveToken(
       tokenAddress,
-      payerIdentity,
+      payerIdentity ?? '',
       provider,
       loanAmount.toString() + '0'
     );
     const payref = '0x' + paymentReference;
-    const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+    const contractAddress =
+      process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
     console.log('contractAddress:', contractAddress);
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);

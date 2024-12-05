@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAppContext } from '@/utils/context';
-import { InvoiceDashboardProps } from '@/types';
 import { useConnectWallet } from '@web3-onboard/react';
 import { RequestNetwork } from '@requestnetwork/request-client.js';
 import Navbar from '@/components/Navbar';
@@ -14,18 +13,16 @@ import {
   PaymentReferenceCalculator,
 } from '@requestnetwork/request-client.js';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
-import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import tokenOptions from '@/utils/tokenOptions';
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
   const { requestNetwork } = useAppContext();
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('active');
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
 
-  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
   const handleWithdraw = async () => {
     console.log('withdraw');
@@ -33,7 +30,7 @@ export default function InvoiceDashboard() {
     const accounts = await provider.send('eth_accounts', []);
     console.log('Accounts:', accounts);
     const payerIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-    const payeeIdentity = wallet?.accounts[0].address;
+    const payeeIdentity = wallet?.accounts[0].address || '';
 
     const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
@@ -93,7 +90,6 @@ export default function InvoiceDashboard() {
     const request = await requestClient.createRequest(requestCreateParameters);
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
     const salt =
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
         .salt;
@@ -244,6 +240,7 @@ export default function InvoiceDashboard() {
                   actionType: string;
                   duration: string;
                   totalInstallment: string;
+                  requestId: string;
                 }) => (
                   <tr
                     key={invoice.key}

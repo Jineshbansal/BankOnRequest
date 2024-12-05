@@ -6,7 +6,7 @@ import { RequestNetwork } from '@requestnetwork/request-client.js';
 import Navbar from '@/components/Navbar';
 import { ethers } from 'ethers';
 import contractABI from '@/utils/contractAbiBorrower';
-import { providers, utils } from 'ethers';
+import { providers } from 'ethers';
 import {
   Types,
   Utils,
@@ -23,92 +23,7 @@ export default function InvoiceDashboard() {
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
 
-  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-  const handleWithdraw = async () => {
-    console.log('withdraw');
-    const provider = new providers.Web3Provider(window.ethereum);
-    const accounts = await provider.send('eth_accounts', []);
-    console.log('Accounts:', accounts);
-    const payerIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-    const payeeIdentity = wallet?.accounts[0].address;
-
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress??'', contractABI, signer);
-    const lendAmount = await contract.amount_deposit();
-    console.log('lendAmount', lendAmount);
-    if (lendAmount == 0) {
-      alert('you donot lend any money to us');
-      return;
-    }
-
-    const requestCreateParameters = {
-      requestInfo: {
-        currency: {
-          type: Types.RequestLogic.CURRENCY.ERC20,
-          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-          network: 'sepolia',
-        },
-        expectedAmount: lendAmount.toString(),
-        payee: {
-          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity,
-        },
-        payer: {
-          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payerIdentity,
-        },
-        timestamp: Utils.getCurrentTimestampInSecond(),
-      },
-      paymentNetwork: {
-        id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
-        parameters: {
-          paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity,
-          feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
-          feeAmount: '0',
-        },
-      },
-      contentData: {
-        reason: 'withdraw',
-        dueDate: '2023.06.16',
-      },
-      signer: {
-        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payeeIdentity,
-      },
-    };
-
-    const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
-    const requestClient = new RequestNetwork({
-      nodeConnectionConfig: {
-        baseURL: 'https://gnosis.gateway.request.network/',
-      },
-      signatureProvider: web3SignatureProvider,
-    });
-    const request = await requestClient.createRequest(requestCreateParameters);
-    const confirmedRequestData = await request.waitForConfirmation();
-    const requestID = confirmedRequestData.requestId;
-    const salt =
-      confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
-        .salt;
-    const paymentReference = PaymentReferenceCalculator.calculate(
-      requestID,
-      salt,
-      payeeIdentity
-    );
-    console.log('paymentReferenceCalculator', paymentReference);
-    console.log('confirmed Request Data:', confirmedRequestData);
-    console.log('Request Parameters:', requestCreateParameters);
-
-    const payref = '0x' + paymentReference;
-    console.log('payref', payref);
-    const data = await contract.withdraw(payref);
-    await data.wait();
-    console.log('payerIdentity', payerIdentity);
-    console.log('payeeIdentity', payeeIdentity);
-    console.log('data', data.hash);
-    alert('Form submitted successfully');
-  };
+  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
   const handleDeposit = async () => {
     console.log('deposit');
@@ -183,14 +98,14 @@ export default function InvoiceDashboard() {
     const paymentReference = PaymentReferenceCalculator.calculate(
       requestID,
       salt,
-      payeeIdentity
+      payeeIdentity ?? ''
     );
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     console.log('Request Parameters:', requestCreateParameters);
     await checkAndApproveToken(
       tokenAddress,
-      payerIdentity,
+      payerIdentity ?? '',
       provider,
       loanAmount.toString() + '0'
     );
