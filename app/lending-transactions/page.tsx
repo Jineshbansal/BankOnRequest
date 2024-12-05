@@ -133,6 +133,7 @@ export default function InvoiceDashboard() {
                 request.payee?.value.toLowerCase() ===
                   wallet.accounts[0].address.toLowerCase())
           );
+          console.log('karan', requestDatas);
           console.log('filteredRequests', filteredRequests);
 
           const active = filteredRequests.filter(
@@ -147,13 +148,24 @@ export default function InvoiceDashboard() {
               wallet.accounts[0].address.toLowerCase()
           );
 
-          const updatedActive = active.filter((activeRequest) =>
-            previous.some(
-              (previousRequest) =>
-                activeRequest.contentData.creationDate <
-                previousRequest.contentData.creationDate
-            )
+          console.log('active', active);
+          console.log('previous', previous);
+
+          const updatedActive = active.filter(
+            (activeRequest) =>
+              previous.length === 0 ||
+              previous.some(
+                (previousRequest) =>
+                  !(
+                    activeRequest.contentData.creationDate <
+                      previousRequest.contentData.creationDate &&
+                    activeRequest.currencyInfo.value ===
+                      previousRequest.currencyInfo.value
+                  )
+              )
           );
+
+          console.log('updatedActive', updatedActive);
 
           setActiveRequests(updatedActive);
           setPreviousRequests(previous);
@@ -167,9 +179,14 @@ export default function InvoiceDashboard() {
     key: index,
     created: new Date(invoice.timestamp * 1000).toLocaleDateString(),
     paymentNetwork: invoice.currencyInfo.network,
-    token: invoice.currency.value,
+    token: invoice.currencyInfo.value,
     amount: invoice.expectedAmount,
     actionType: activeTab === 'active' ? 'Withdraw' : 'Completed',
+    requestId: `${invoice.requestId.slice(0, 4)}...${invoice.requestId.slice(
+      -3
+    )}`,
+    duration: invoice.contentData.duration,
+    totalInstallment: invoice.contentData.totalInstallment,
   }));
 
   return (
@@ -203,11 +220,16 @@ export default function InvoiceDashboard() {
             <thead className='bg-[#0bb489] text-white'>
               <tr>
                 <th className='py-2 px-4 border-b text-left'>Created</th>
+                <th className='py-2 px-4 border-b text-left'>Request ID</th>
                 <th className='py-2 px-2 border-b text-left'>
                   Payment Network
                 </th>
                 <th className='py-2 pr-32 border-b text-left'>Token</th>
                 <th className='py-2 px-4 border-b text-left'>Amount</th>
+                <th className='py-2 px-4 border-b text-left'>Duration</th>
+                <th className='py-2 px-4 border-b text-left'>
+                  Total Installment
+                </th>
                 <th className='py-2 px-4 border-b text-left'>Action</th>
               </tr>
             </thead>
@@ -220,6 +242,8 @@ export default function InvoiceDashboard() {
                   token: string;
                   amount: string;
                   actionType: string;
+                  duration: string;
+                  totalInstallment: string;
                 }) => (
                   <tr
                     key={invoice.key}
@@ -229,14 +253,22 @@ export default function InvoiceDashboard() {
                       {invoice.created}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
+                      {invoice.requestId}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
                       {invoice.paymentNetwork}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {tokenOptions[invoice.token as keyof typeof tokenOptions]}
-                      -{invoice.token}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.amount}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.duration}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.totalInstallment}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {activeTab === 'active' ? (

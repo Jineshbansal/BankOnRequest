@@ -5,6 +5,7 @@ interface DropdownInputProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   labelName: string;
+  fieldName?: string;
 }
 
 const DropdownInput: React.FC<DropdownInputProps> = ({
@@ -12,6 +13,7 @@ const DropdownInput: React.FC<DropdownInputProps> = ({
   value,
   onChange,
   labelName,
+  fieldName,
 }) => {
   return (
     <div className='w-full'>
@@ -26,7 +28,7 @@ const DropdownInput: React.FC<DropdownInputProps> = ({
         style={{ borderColor: '#0bb489' }}
       >
         <option value='' disabled>
-          Select a token
+          {fieldName ? fieldName : 'Select a token'}
         </option>
         {options.map((token) => (
           <option key={token.value} value={token.value}>

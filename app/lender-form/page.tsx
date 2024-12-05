@@ -51,6 +51,7 @@ const App = () => {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: lendingToken,
+          token: tokenOptions[lendingToken],
           network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),

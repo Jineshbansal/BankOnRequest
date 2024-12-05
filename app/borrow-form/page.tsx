@@ -34,12 +34,15 @@ const App = () => {
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
   const [issuedDate, setIssuedDate] = useState('');
-  const [emiPlan, setEmiPlan] = useState('3');
+  const [duration, setDuration] = useState('');
+  const [totalInstallments, setTotalInstallments] = useState('');
 
-  const emiOptions = [
-    { value: '3', label: '3 Months' },
-    { value: '6', label: '6 Months' },
-    { value: '12', label: '12 Months' },
+  const durationOptions = [
+    { value: 'minutes', label: 'Minutes' },
+    { value: 'hours', label: 'Hours' },
+    { value: 'days', label: 'Days' },
+    { value: 'weeks', label: 'Weeks' },
+    { value: 'months', label: 'Months' },
   ];
 
   const [{ wallet }] = useConnectWallet();
@@ -49,7 +52,11 @@ const App = () => {
   console.log('payerIdentity:', payerIdentity);
 
   useEffect(() => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
   }, []);
 
@@ -65,6 +72,7 @@ const App = () => {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: borrowingToken,
+          token: tokenOptions[borrowingToken],
           network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),
@@ -82,7 +90,7 @@ const App = () => {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
           paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity??'',
+          paymentAddress: payeeIdentity ?? '',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
         },
@@ -92,11 +100,10 @@ const App = () => {
         reason: description ?? '',
         requestType: 'borrow',
         dueDate: '2023.06.16',
-        emiPlan: emiPlan,
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payeeIdentity??'',
+        value: payeeIdentity ?? '',
       },
     };
     const provider = new providers.Web3Provider(window.ethereum);
@@ -148,11 +155,7 @@ const App = () => {
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
-    await contract.borrowcallTransferWithFee(
-      loanAmount,
-      giveAmount,
-      payref
-    );
+    await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);
@@ -232,6 +235,23 @@ const App = () => {
               />
             </div>
 
+            <div className='flex justify-between mb-4 gap-4'>
+              <DropdownInput
+                options={durationOptions}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                labelName='Duration:'
+                fieldName='Select a duration'
+              />
+              <Input
+                label='Total Installments:'
+                type='number'
+                value={totalInstallments}
+                onChange={(e) => setTotalInstallments(e.target.value)}
+                required
+              />
+            </div>
+
             <Input
               label='Description:'
               value={description}
@@ -239,15 +259,6 @@ const App = () => {
               required
               textarea
             />
-
-            <div className='flex justify-end mb-4'>
-              <DropdownInput
-                options={emiOptions}
-                value={emiPlan}
-                onChange={(e) => setEmiPlan(e.target.value)}
-                labelName='EMI Plan:'
-              />
-            </div>
 
             <h2 className='text-xl font mb-4' style={{ color: '#0bb489' }}>
               Borrower Details

@@ -5,8 +5,8 @@ import { useConnectWallet } from '@web3-onboard/react';
 import { RequestNetwork } from '@requestnetwork/request-client.js';
 import Navbar from '@/components/Navbar';
 import { ethers } from 'ethers';
-import contractABI from '@/utils/contractAbi';
-import { providers } from 'ethers';
+import contractABI from '@/utils/contractAbiBorrower';
+import { providers, utils } from 'ethers';
 import {
   Types,
   Utils,
@@ -215,7 +215,7 @@ export default function InvoiceDashboard() {
           const requestDatas = requests.map((request) => request.getData());
           const filteredRequests = requestDatas.filter(
             (request) =>
-              request.contentData.requestType === 'lend' &&
+              request.contentData.requestType === 'borrow' &&
               (request.payer?.value.toLowerCase() ===
                 wallet.accounts[0].address.toLowerCase() ||
                 request.payee?.value.toLowerCase() ===
@@ -235,12 +235,18 @@ export default function InvoiceDashboard() {
               wallet.accounts[0].address.toLowerCase()
           );
 
-          const updatedActive = active.filter((activeRequest) =>
-            previous.some(
-              (previousRequest) =>
-                activeRequest.contentData.creationDate <
-                previousRequest.contentData.creationDate
-            )
+          const updatedActive = active.filter(
+            (activeRequest) =>
+              previous.length === 0 ||
+              previous.some(
+                (previousRequest) =>
+                  !(
+                    activeRequest.contentData.creationDate <
+                      previousRequest.contentData.creationDate &&
+                    activeRequest.currencyInfo.value ===
+                      previousRequest.currencyInfo.value
+                  )
+              )
           );
 
           setActiveRequests(updatedActive);
@@ -255,7 +261,7 @@ export default function InvoiceDashboard() {
     key: index,
     created: new Date(invoice.timestamp * 1000).toLocaleDateString(),
     paymentNetwork: invoice.currencyInfo.network,
-    token: invoice.currency.value,
+    token: invoice.currencyInfo.value,
     amount: invoice.expectedAmount,
     actionType: activeTab === 'active' ? 'Deposit' : 'Completed',
   }));
@@ -321,7 +327,6 @@ export default function InvoiceDashboard() {
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {tokenOptions[invoice.token as keyof typeof tokenOptions]}
-                      -{invoice.token}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.amount}
