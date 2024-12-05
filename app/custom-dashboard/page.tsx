@@ -1,17 +1,18 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { config } from '@/utils/config';
+import { useEffect, useState } from 'react';
 import { useAppContext } from '@/utils/context';
 import { InvoiceDashboardProps } from '@/types';
 import { useConnectWallet } from '@web3-onboard/react';
 import { RequestNetwork } from '@requestnetwork/request-client.js';
-import { wagmiConfig } from '@/utils/connectWallet';
 import Navbar from '@/components/Navbar';
-import { ethers } from "ethers";
-import { Address } from 'viem';
+import { ethers } from 'ethers';
 import contractABI from '@/utils/contractAbi';
 import { providers, utils } from 'ethers';
-import { Types, Utils , PaymentReferenceCalculator} from '@requestnetwork/request-client.js';
+import {
+  Types,
+  Utils,
+  PaymentReferenceCalculator,
+} from '@requestnetwork/request-client.js';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 
@@ -19,17 +20,50 @@ export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
   const { requestNetwork } = useAppContext();
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [invoicesByCurrency, setInvoicesByCurrency] = useState<{
-    [key: string]: any[];
-  }>({});
-  const [borrowedMoney, setBorrowedMoney] = useState<{ [key: string]: number }>(
-    {}
-  );
-  const [depositedMoney, setDepositedMoney] = useState<{ [key: string]: number }>(
-    {}
-  );
+  const [activeTab, setActiveTab] = useState('active');
+  const [activeRequests, setActiveRequests] = useState<any[]>([]);
+  const [previousRequests, setPreviousRequests] = useState<any[]>([]);
+
+  const dummyActiveTransactions = [
+    {
+      key: 1,
+      created: '2023-10-01',
+      paymentNetwork: 'sepolia1',
+      token: 'token1',
+      amount: '1000',
+      actionType: 'Withdraw',
+    },
+    {
+      key: 2,
+      created: '2023-10-02',
+      paymentNetwork: 'sepolia1',
+      token: 'token2',
+      amount: '2000',
+      actionType: 'Deposit',
+    },
+  ];
+
+  const dummyPreviousTransactions = [
+    {
+      key: 1,
+      created: '2023-09-01',
+      paymentNetwork: 'sepolia',
+      token: 'token1',
+      amount: '500',
+      actionType: 'Withdraw',
+    },
+    {
+      key: 2,
+      created: '2023-09-02',
+      paymentNetwork: 'sepolia',
+      token: 'token2',
+      amount: '1500',
+      actionType: 'Deposit',
+    },
+  ];
+
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-  const handleWithdraw = async() => {
+  const handleWithdraw = async () => {
     console.log('withdraw');
     const provider = new providers.Web3Provider(window.ethereum);
     const accounts = await provider.send('eth_accounts', []);
@@ -39,9 +73,12 @@ export default function InvoiceDashboard() {
 
     const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const lendAmount=await contract.amount_deposit()
+    const lendAmount = await contract.amount_deposit();
     console.log('lendAmount', lendAmount);
-    if(lendAmount==0){alert("you donot lend any money to us");return;}
+    if (lendAmount == 0) {
+      alert('you donot lend any money to us');
+      return;
+    }
 
     const requestCreateParameters = {
       requestInfo: {
@@ -71,7 +108,7 @@ export default function InvoiceDashboard() {
         },
       },
       contentData: {
-        reason: "withdraw",
+        reason: 'withdraw',
         dueDate: '2023.06.16',
       },
       signer: {
@@ -79,7 +116,6 @@ export default function InvoiceDashboard() {
         value: payeeIdentity,
       },
     };
-    
 
     const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
     const requestClient = new RequestNetwork({
@@ -103,7 +139,7 @@ export default function InvoiceDashboard() {
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     console.log('Request Parameters:', requestCreateParameters);
-    
+
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
     const data = await contract.withdraw(payref);
@@ -112,10 +148,9 @@ export default function InvoiceDashboard() {
     console.log('payeeIdentity', payeeIdentity);
     console.log('data', data.hash);
     alert('Form submitted successfully');
-
   };
 
-  const handleDeposit = async() => {
+  const handleDeposit = async () => {
     console.log('deposit');
     const provider = new providers.Web3Provider(window.ethereum);
     const accounts = await provider.send('eth_accounts', []);
@@ -125,9 +160,12 @@ export default function InvoiceDashboard() {
 
     const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const loanAmount=await contract.amount_borrow()
+    const loanAmount = await contract.amount_borrow();
     console.log('loanAmount', loanAmount);
-    if(loanAmount==0){alert("you donot loan any money from us");return;}
+    if (loanAmount == 0) {
+      alert('you donot loan any money from us');
+      return;
+    }
 
     const requestCreateParameters = {
       requestInfo: {
@@ -157,7 +195,7 @@ export default function InvoiceDashboard() {
         },
       },
       contentData: {
-        reason: "deposit",
+        reason: 'deposit',
         dueDate: '2023.06.16',
       },
       signer: {
@@ -165,7 +203,6 @@ export default function InvoiceDashboard() {
         value: payerIdentity,
       },
     };
-    
 
     const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
     const requestClient = new RequestNetwork({
@@ -193,7 +230,7 @@ export default function InvoiceDashboard() {
       tokenAddress,
       payerIdentity,
       provider,
-      loanAmount.toString()+"0"
+      loanAmount.toString() + '0'
     );
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
@@ -203,8 +240,14 @@ export default function InvoiceDashboard() {
     console.log('payeeIdentity', payeeIdentity);
     console.log('data', data.hash);
     alert('Form submitted successfully');
+  };
 
-
+  const handleAction = (record: any) => {
+    if (record.actionType === 'Withdraw') {
+      handleWithdraw();
+    } else if (record.actionType === 'Deposit') {
+      handleDeposit();
+    }
   };
 
   useEffect(() => {
@@ -216,95 +259,115 @@ export default function InvoiceDashboard() {
         })
         .then((requests) => {
           const requestDatas = requests.map((request) => request.getData());
-          setInvoices(requestDatas);
+          const filteredRequests = requestDatas.filter(
+            (request) =>
+              request.contentData.requestType === 'lend' &&
+              (request.payer?.value.toLowerCase() ===
+                wallet.accounts[0].address.toLowerCase() ||
+                request.payee?.value.toLowerCase() ===
+                  wallet.accounts[0].address.toLowerCase())
+          );
+          console.log('filteredRequests', filteredRequests);
 
-          const groupedByCurrency = requestDatas.reduce((acc, invoice) => {
-            const currency = invoice.currencyInfo.type;
-            if (!acc[currency]) {
-              acc[currency] = [];
-            }
-            acc[currency].push(invoice);
-            return acc;
-          }, {} as { [key: string]: any[] });
+          const active = filteredRequests.filter(
+            (invoice) =>
+              invoice.payer?.value.toLowerCase() ===
+              wallet.accounts[0].address.toLowerCase()
+          );
 
-          setInvoicesByCurrency(groupedByCurrency);
-          console.log('groupedByCurrency', groupedByCurrency);
+          const previous = filteredRequests.filter(
+            (invoice) =>
+              invoice.payee?.value.toLowerCase() ===
+              wallet.accounts[0].address.toLowerCase()
+          );
 
-          const borrowedMoneyTemp = requestDatas.reduce((acc, invoice) => {
-            const currency = invoice.currencyInfo.type;
-            if (
-              invoice.payee?.value.toLowerCase() === wallet?.accounts[0].address.toLowerCase()
-            ) {
-              console.log('amount', invoice.expectedAmount);
-              if (!acc[currency]) {
-                acc[currency] = 0;
-              }
-              acc[currency] += Number(invoice.expectedAmount);
-            }
-            return acc;
-          }, {} as { [key: string]: number });
-
-          setBorrowedMoney(borrowedMoneyTemp);
-          console.log('borrowedMoney', borrowedMoneyTemp);
-
-          const depositedMoneyTemp = requestDatas.reduce((acc, invoice) => {
-            const currency = invoice.currencyInfo.type;
-            if (
-              invoice.payer?.value.toLowerCase() === wallet?.accounts[0].address.toLowerCase()
-            ) {
-              console.log('amount', invoice.expectedAmount);
-              if (!acc[currency]) {
-                acc[currency] = 0;
-              }
-              acc[currency] += Number(invoice.expectedAmount);
-            }
-            return acc;
-          }, {} as { [key: string]: number });
-
-          setDepositedMoney(depositedMoneyTemp);
-          console.log('depositedMoney', depositedMoneyTemp);
-            console.log('requestDatas', requestDatas);
+          setActiveRequests(active);
+          setPreviousRequests(previous);
         });
     }
   }, [wallet, requestNetwork]);
-  
+
+  const dataSource = (
+    activeTab === 'active' ? activeRequests : previousRequests
+  ).map((invoice, index) => ({
+    key: index,
+    created: new Date(invoice.timestamp * 1000).toLocaleDateString(),
+    paymentNetwork: invoice.currencyInfo.network,
+    token: 'token1',
+    amount: invoice.expectedAmount,
+    actionType: invoice.state === 'created' ? 'Withdraw' : 'Deposit',
+  }));
+
   return (
-    <div className='container m-auto w-[100%] h-screen'>
+    <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar bg-[f3f4f6]'>
       <Navbar />
-      <div className='mt-8 flex justify-center'>
-        <table className='min-w-full bg-white text-center'>
-          <thead>
-            <tr>
-              <th className='py-2 px-4 border-b'>Currency</th>
-              <th className='py-2 px-4 border-b'>Amount</th>
-              <th className='py-2 px-4 border-b'>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(invoicesByCurrency).map((currency, index) => (
-              <tr key={index}>
-                <td className='py-2 px-4 border-b'>{currency}</td>
-                <td className='py-2 px-4 border-b'>
-                  {Math.abs((depositedMoney[currency] || 0) - (borrowedMoney[currency] || 0))}
-                </td>
-                <td className='py-2 px-4 border-b'>
-                  {(depositedMoney[currency] || 0) > (borrowedMoney[currency] || 0) ? (
-                    <button className='bg-red-500 text-white py-1 px-2 rounded' 
-                    onClick={handleWithdraw}>
-                      Withdraw
-                    </button>
-                  ) : (
-                    <button className='bg-blue-500 text-white py-1 px-2 rounded'
-                    onClick={handleDeposit}>
-                      Deposit
-                    </button>
-                  )}
-                </td>
-                
+      <div className='container mx-auto p-4'>
+        <div className='flex justify-center mb-4'>
+          <button
+            className={`px-4 py-2 mx-2 rounded-full ${
+              activeTab === 'active'
+                ? 'bg-[#0bb489] text-white'
+                : 'bg-white text-[#0bb489]'
+            } transition duration-300 ease-in-out transform hover:scale-105`}
+            onClick={() => setActiveTab('active')}
+          >
+            Active Transactions
+          </button>
+          <button
+            className={`px-4 py-2 mx-2 rounded-full ${
+              activeTab === 'previous'
+                ? 'bg-[#0bb489] text-white'
+                : 'bg-white text-[#0bb489]'
+            } transition duration-300 ease-in-out transform hover:scale-105`}
+            onClick={() => setActiveTab('previous')}
+          >
+            Previous Transactions
+          </button>
+        </div>
+        <div className='overflow-x-auto shadow-lg rounded-lg bg-white'>
+          <table className='min-w-full'>
+            <thead className='bg-[#0bb489] text-white'>
+              <tr>
+                <th className='py-2 px-4 border-b text-left'>Created</th>
+                <th className='py-2 px-4 border-b text-left'>
+                  Payment Network
+                </th>
+                <th className='py-2 px-4 border-b text-left'>Token</th>
+                <th className='py-2 px-4 border-b text-left'>Amount</th>
+                <th className='py-2 px-4 border-b text-left'>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {dataSource.map((invoice) => (
+                <tr
+                  key={invoice.key}
+                  className='hover:bg-gray-100 transition duration-300 ease-in-out'
+                >
+                  <td className='py-2 px-4 border-b text-left'>
+                    {invoice.created}
+                  </td>
+                  <td className='py-2 px-4 border-b text-left'>
+                    {invoice.paymentNetwork}
+                  </td>
+                  <td className='py-2 px-4 border-b text-left'>
+                    {invoice.token}
+                  </td>
+                  <td className='py-2 px-4 border-b text-left'>
+                    {invoice.amount}
+                  </td>
+                  <td className='py-2 px-4 border-b text-left'>
+                    <button
+                      className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
+                      onClick={() => handleAction(invoice)}
+                    >
+                      {invoice.actionType}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

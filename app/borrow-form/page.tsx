@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
-import { BigNumber, providers, utils } from 'ethers';
+import { providers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import {
   RequestNetwork,
@@ -13,11 +13,16 @@ import contractABI from '@/utils/contractAbi';
 import Navbar from '@/components/Navbar';
 import Input from '@/components/input';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
+import DropdownInput from '@/components/dropDownInput';
 
 const App = () => {
-  const [borrowingToken, setBorrowingToken] = useState('0x1d87Fc9829d03a56bdb5ba816C2603757f592D82');
+  const [borrowingToken, setBorrowingToken] = useState(
+    '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82'
+  );
   const [borrowingAmount, setBorrowingAmount] = useState('1');
-  const [collateralToken, setCollateralToken] = useState('0xA74b9F8a20dfACA9d7674FeE0697eE3518567248');
+  const [collateralToken, setCollateralToken] = useState(
+    '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248'
+  );
   const [collateralAmount, setCollateralAmount] = useState('1');
   const [description, setDescription] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -28,6 +33,11 @@ const App = () => {
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
   const [issuedDate, setIssuedDate] = useState('');
+
+  const tokenOptions = [
+    { value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82', label: 'TKN1' },
+    { value: '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248', label: 'TKN2' },
+  ];
 
   const [{ wallet }] = useConnectWallet();
   const payerIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
@@ -75,7 +85,9 @@ const App = () => {
         },
       },
       contentData: {
-        reason: description ,
+        creationDate: Utils.getCurrentTimestampInSecond(),
+        reason: description,
+        requestType: 'borrow',
         dueDate: '2023.06.16',
       },
       signer: {
@@ -101,12 +113,12 @@ const App = () => {
       signatureProvider: web3SignatureProvider,
     });
     const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
-    const collateralTokenAddress='0xA74b9F8a20dfACA9d7674FeE0697eE3518567248';
+    const collateralTokenAddress = '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248';
     await checkAndApproveToken(
       collateralTokenAddress,
       payeeIdentity,
       provider,
-      giveAmount.toString()+"0"
+      giveAmount.toString() + '0'
     );
     console.log('request Client:', requestClient);
     console.log('request create parameters', requestCreateParameters);
@@ -118,7 +130,11 @@ const App = () => {
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
         .salt;
 
-    const paymentReference = PaymentReferenceCalculator.calculate(requestID,salt,payeeIdentity);
+    const paymentReference = PaymentReferenceCalculator.calculate(
+      requestID,
+      salt,
+      payeeIdentity
+    );
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     alert('Wallet connected successfully!');
@@ -129,7 +145,11 @@ const App = () => {
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
-    const data = await contract.borrowcallTransferWithFee(loanAmount,giveAmount,payref);
+    const data = await contract.borrowcallTransferWithFee(
+      loanAmount,
+      giveAmount,
+      payref
+    );
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);
@@ -172,11 +192,10 @@ const App = () => {
             />
 
             <div className='w-full justify-between flex space-x-4'>
-              <Input
-                label='Borrowing Token:'
+              <DropdownInput
+                options={tokenOptions}
                 value={borrowingToken}
                 onChange={(e) => setBorrowingToken(e.target.value)}
-                required
               />
               <Input
                 label='Borrowing Amount:'
@@ -188,11 +207,10 @@ const App = () => {
             </div>
 
             <div className='w-full justify-between flex space-x-4'>
-              <Input
-                label='Collateral Token:'
+              <DropdownInput
+                options={tokenOptions}
                 value={collateralToken}
                 onChange={(e) => setCollateralToken(e.target.value)}
-                required
               />
               <Input
                 label='Collateral Amount:'
@@ -322,11 +340,11 @@ const App = () => {
                 <div className='flex justify-between'>
                   <div>
                     <p className='mb-2'>Borrowed Token: {borrowingToken}</p>
-                    <p className='mb-2'>Borrowed Amount: {borrowingAmount}</p>
+                    <p className='mb-2'>Collateral Token: {collateralToken}</p>
                     <p className='mb-2'>Description: {description}</p>
                   </div>
                   <div>
-                    <p className='mb-2'>Collateral Token: {collateralToken}</p>
+                    <p className='mb-2'>Borrowed Amount: {borrowingAmount}</p>
                     <p className='mb-2'>
                       Collateral Amount: {collateralAmount}
                     </p>

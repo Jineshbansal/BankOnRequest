@@ -14,6 +14,7 @@ import Navbar from '@/components/Navbar';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import { useAppContext } from '@/utils/context';
 import Input from '@/components/input';
+import DropdownInput from '@/components/dropDownInput';
 
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
@@ -33,9 +34,15 @@ const App = () => {
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
 
+  const tokenOptions = [
+    { value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82', label: 'TKN1' },
+    { value: '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248', label: 'TKN2' },
+  ];
+
   useEffect(() => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
+    console.log(Utils.getCurrentTimestampInSecond());
   }, []);
 
   const submitHandler = async (event: React.FormEvent) => {
@@ -48,7 +55,7 @@ const App = () => {
       requestInfo: {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
-          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
+          value: lendingToken,
           network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),
@@ -72,7 +79,9 @@ const App = () => {
         },
       },
       contentData: {
+        creationDate: Utils.getCurrentTimestampInSecond(),
         reason: description,
+        requestType: 'lend',
         dueDate: '2023.06.16',
       },
       signer: {
@@ -95,7 +104,7 @@ const App = () => {
     const request = await requestClient.createRequest(requestCreateParameters);
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
+    const tokenAddress = lendingToken;
     const salt =
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
         .salt;
@@ -111,7 +120,7 @@ const App = () => {
       tokenAddress,
       payerIdentity,
       provider,
-      loanAmount.toString()+"0"
+      loanAmount.toString() + '0'
     );
     const payref = '0x' + paymentReference;
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
@@ -159,11 +168,10 @@ const App = () => {
               readOnly
             />
 
-            <Input
-              label='Lending Token:'
+            <DropdownInput
+              options={tokenOptions}
               value={lendingToken}
               onChange={(e) => setLendingToken(e.target.value)}
-              required
             />
 
             <Input
