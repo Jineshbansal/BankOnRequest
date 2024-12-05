@@ -15,6 +15,7 @@ import {
 } from '@requestnetwork/request-client.js';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
+import tokenOptions from '@/utils/tokenOptions';
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -24,45 +25,8 @@ export default function InvoiceDashboard() {
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
 
-  const dummyActiveTransactions = [
-    {
-      key: 1,
-      created: '2023-10-01',
-      paymentNetwork: 'sepolia1',
-      token: 'token1',
-      amount: '1000',
-      actionType: 'Withdraw',
-    },
-    {
-      key: 2,
-      created: '2023-10-02',
-      paymentNetwork: 'sepolia1',
-      token: 'token2',
-      amount: '2000',
-      actionType: 'Deposit',
-    },
-  ];
-
-  const dummyPreviousTransactions = [
-    {
-      key: 1,
-      created: '2023-09-01',
-      paymentNetwork: 'sepolia',
-      token: 'token1',
-      amount: '500',
-      actionType: 'Withdraw',
-    },
-    {
-      key: 2,
-      created: '2023-09-02',
-      paymentNetwork: 'sepolia',
-      token: 'token2',
-      amount: '1500',
-      actionType: 'Deposit',
-    },
-  ];
-
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+
   const handleWithdraw = async () => {
     console.log('withdraw');
     const provider = new providers.Web3Provider(window.ethereum);
@@ -108,6 +72,8 @@ export default function InvoiceDashboard() {
         },
       },
       contentData: {
+        creationDate: Utils.getCurrentTimestampInSecond(),
+        requestType: 'lend',
         reason: 'withdraw',
         dueDate: '2023.06.16',
       },
@@ -150,106 +116,6 @@ export default function InvoiceDashboard() {
     alert('Form submitted successfully');
   };
 
-  const handleDeposit = async () => {
-    console.log('deposit');
-    const provider = new providers.Web3Provider(window.ethereum);
-    const accounts = await provider.send('eth_accounts', []);
-    console.log('Accounts:', accounts);
-    const payerIdentity = wallet?.accounts[0].address;
-    const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const loanAmount = await contract.amount_borrow();
-    console.log('loanAmount', loanAmount);
-    if (loanAmount == 0) {
-      alert('you donot loan any money from us');
-      return;
-    }
-
-    const requestCreateParameters = {
-      requestInfo: {
-        currency: {
-          type: Types.RequestLogic.CURRENCY.ERC20,
-          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-          network: 'sepolia',
-        },
-        expectedAmount: loanAmount.toString(),
-        payee: {
-          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity,
-        },
-        payer: {
-          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payerIdentity,
-        },
-        timestamp: Utils.getCurrentTimestampInSecond(),
-      },
-      paymentNetwork: {
-        id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
-        parameters: {
-          paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity,
-          feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
-          feeAmount: '0',
-        },
-      },
-      contentData: {
-        reason: 'deposit',
-        dueDate: '2023.06.16',
-      },
-      signer: {
-        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payerIdentity,
-      },
-    };
-
-    const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
-    const requestClient = new RequestNetwork({
-      nodeConnectionConfig: {
-        baseURL: 'https://gnosis.gateway.request.network/',
-      },
-      signatureProvider: web3SignatureProvider,
-    });
-    const request = await requestClient.createRequest(requestCreateParameters);
-    const confirmedRequestData = await request.waitForConfirmation();
-    const requestID = confirmedRequestData.requestId;
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
-    const salt =
-      confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
-        .salt;
-    const paymentReference = PaymentReferenceCalculator.calculate(
-      requestID,
-      salt,
-      payeeIdentity
-    );
-    console.log('paymentReferenceCalculator', paymentReference);
-    console.log('confirmed Request Data:', confirmedRequestData);
-    console.log('Request Parameters:', requestCreateParameters);
-    await checkAndApproveToken(
-      tokenAddress,
-      payerIdentity,
-      provider,
-      loanAmount.toString() + '0'
-    );
-    const payref = '0x' + paymentReference;
-    console.log('payref', payref);
-    const data = await contract.repayLoan(payref);
-    await data.wait();
-    console.log('payerIdentity', payerIdentity);
-    console.log('payeeIdentity', payeeIdentity);
-    console.log('data', data.hash);
-    alert('Form submitted successfully');
-  };
-
-  const handleAction = (record: any) => {
-    if (record.actionType === 'Withdraw') {
-      handleWithdraw();
-    } else if (record.actionType === 'Deposit') {
-      handleDeposit();
-    }
-  };
-
   useEffect(() => {
     if (wallet) {
       requestNetwork
@@ -281,7 +147,15 @@ export default function InvoiceDashboard() {
               wallet.accounts[0].address.toLowerCase()
           );
 
-          setActiveRequests(active);
+          const updatedActive = active.filter((activeRequest) =>
+            previous.some(
+              (previousRequest) =>
+                activeRequest.contentData.creationDate <
+                previousRequest.contentData.creationDate
+            )
+          );
+
+          setActiveRequests(updatedActive);
           setPreviousRequests(previous);
         });
     }
@@ -293,9 +167,9 @@ export default function InvoiceDashboard() {
     key: index,
     created: new Date(invoice.timestamp * 1000).toLocaleDateString(),
     paymentNetwork: invoice.currencyInfo.network,
-    token: 'token1',
+    token: invoice.currency.value,
     amount: invoice.expectedAmount,
-    actionType: invoice.state === 'created' ? 'Withdraw' : 'Deposit',
+    actionType: activeTab === 'active' ? 'Withdraw' : 'Completed',
   }));
 
   return (
@@ -329,42 +203,58 @@ export default function InvoiceDashboard() {
             <thead className='bg-[#0bb489] text-white'>
               <tr>
                 <th className='py-2 px-4 border-b text-left'>Created</th>
-                <th className='py-2 px-4 border-b text-left'>
+                <th className='py-2 px-2 border-b text-left'>
                   Payment Network
                 </th>
-                <th className='py-2 px-4 border-b text-left'>Token</th>
+                <th className='py-2 pr-32 border-b text-left'>Token</th>
                 <th className='py-2 px-4 border-b text-left'>Amount</th>
                 <th className='py-2 px-4 border-b text-left'>Action</th>
               </tr>
             </thead>
             <tbody>
-              {dataSource.map((invoice) => (
-                <tr
-                  key={invoice.key}
-                  className='hover:bg-gray-100 transition duration-300 ease-in-out'
-                >
-                  <td className='py-2 px-4 border-b text-left'>
-                    {invoice.created}
-                  </td>
-                  <td className='py-2 px-4 border-b text-left'>
-                    {invoice.paymentNetwork}
-                  </td>
-                  <td className='py-2 px-4 border-b text-left'>
-                    {invoice.token}
-                  </td>
-                  <td className='py-2 px-4 border-b text-left'>
-                    {invoice.amount}
-                  </td>
-                  <td className='py-2 px-4 border-b text-left'>
-                    <button
-                      className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
-                      onClick={() => handleAction(invoice)}
-                    >
-                      {invoice.actionType}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {dataSource.map(
+                (invoice: {
+                  key: number;
+                  created: string;
+                  paymentNetwork: string;
+                  token: string;
+                  amount: string;
+                  actionType: string;
+                }) => (
+                  <tr
+                    key={invoice.key}
+                    className='hover:bg-gray-100 transition duration-300 ease-in-out'
+                  >
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.created}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.paymentNetwork}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {tokenOptions[invoice.token as keyof typeof tokenOptions]}
+                      -{invoice.token}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.amount}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {activeTab === 'active' ? (
+                        <button
+                          className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
+                          onClick={() => handleWithdraw()}
+                        >
+                          {invoice.actionType}
+                        </button>
+                      ) : (
+                        <span className='px-4 py-2 bg-gray-300 text-gray-700 rounded-full'>
+                          Completed
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              )}
             </tbody>
           </table>
         </div>

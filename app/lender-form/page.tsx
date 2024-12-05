@@ -15,6 +15,7 @@ import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import { useAppContext } from '@/utils/context';
 import Input from '@/components/input';
 import DropdownInput from '@/components/dropDownInput';
+import tokenOptions from '@/utils/tokenOptions';
 
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
@@ -33,11 +34,6 @@ const App = () => {
   const payerIdentity = wallet?.accounts[0].address;
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
-
-  const tokenOptions = [
-    { value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82', label: 'TKN1' },
-    { value: '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248', label: 'TKN2' },
-  ];
 
   useEffect(() => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -169,9 +165,13 @@ const App = () => {
             />
 
             <DropdownInput
-              options={tokenOptions}
+              options={Object.entries(tokenOptions).map(([value, label]) => ({
+                value,
+                label,
+              }))}
               value={lendingToken}
               onChange={(e) => setLendingToken(e.target.value)}
+              labelName='Lending Token:'
             />
 
             <Input
@@ -298,7 +298,9 @@ const App = () => {
                 <h2 className='text-lg font mb-2' style={{ color: '#0bb489' }}>
                   Payment Details:
                 </h2>
-                <p className='mb-2'>Token: {lendingToken}</p>
+                <p className='mb-2'>
+                  Token: {tokenOptions[lendingToken]} - {lendingToken}
+                </p>
                 <p className='mb-2'>Amount: {lendingAmount}</p>
                 <p className='mb-2'>Description: {description}</p>
               </div>

@@ -21,23 +21,34 @@ const Navbar: FC = () => {
   }, [wallet]);
 
   return (
-    <nav className='w-full bg-[#038962] p-4 flex justify-between items-center'>
-      <Link href='/' className='text-white text-2xl font-bold'>
-        BankOnRequest
-      </Link>
+    <nav className='w-full bg-[#038962] p-4 flex justify-between items-center shadow-lg'>
+      <div className='flex items-center'>
+        <Link
+          href='/'
+          className='text-white text-2xl font-bold hover:text-gray-200'
+        >
+          BankOnRequest
+        </Link>
+      </div>
       <div className='flex items-center mr-5'>
         {wallet && (
-          <Link href='/dashboard' className='text-white text-xl mr-4'>
-            Dashboard
+          <Link
+            href='/borrowing-transactions'
+            className='text-white text-xl mr-4 hover:text-gray-200'
+          >
+            Borrowing Transactions
           </Link>
         )}
         {wallet && (
-          <Link href='/custom-dashboard' className='text-white text-xl mr-4'>
-            Custom Dash
+          <Link
+            href='/lending-transactions'
+            className='text-white text-xl mr-4 hover:text-gray-200'
+          >
+            Lending Transactions
           </Link>
         )}
         <button
-          className='bg-white text-[#038962] px-4 py-2 rounded-lg shadow-md hover:bg-gray-200'
+          className='bg-white text-[#038962] px-4 py-2 rounded-lg shadow-md hover:bg-gray-200 transition duration-300 ease-in-out'
           disabled={connecting}
           onClick={() => (wallet ? disconnect(wallet) : connect())}
         >

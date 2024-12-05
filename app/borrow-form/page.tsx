@@ -14,6 +14,7 @@ import Navbar from '@/components/Navbar';
 import Input from '@/components/input';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import DropdownInput from '@/components/dropDownInput';
+import tokenOptions from '@/utils/tokenOptions';
 
 const App = () => {
   const [borrowingToken, setBorrowingToken] = useState(
@@ -33,10 +34,12 @@ const App = () => {
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
   const [issuedDate, setIssuedDate] = useState('');
+  const [emiPlan, setEmiPlan] = useState('3');
 
-  const tokenOptions = [
-    { value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82', label: 'TKN1' },
-    { value: '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248', label: 'TKN2' },
+  const emiOptions = [
+    { value: '3', label: '3 Months' },
+    { value: '6', label: '6 Months' },
+    { value: '12', label: '12 Months' },
   ];
 
   const [{ wallet }] = useConnectWallet();
@@ -61,7 +64,7 @@ const App = () => {
       requestInfo: {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
-          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
+          value: borrowingToken,
           network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),
@@ -89,6 +92,7 @@ const App = () => {
         reason: description,
         requestType: 'borrow',
         dueDate: '2023.06.16',
+        emiPlan: emiPlan,
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -112,8 +116,8 @@ const App = () => {
       },
       signatureProvider: web3SignatureProvider,
     });
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
-    const collateralTokenAddress = '0xA74b9F8a20dfACA9d7674FeE0697eE3518567248';
+    const tokenAddress = borrowingToken;
+    const collateralTokenAddress = collateralToken;
     await checkAndApproveToken(
       collateralTokenAddress,
       payeeIdentity,
@@ -193,9 +197,13 @@ const App = () => {
 
             <div className='w-full justify-between flex space-x-4'>
               <DropdownInput
-                options={tokenOptions}
+                options={Object.entries(tokenOptions).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
                 value={borrowingToken}
                 onChange={(e) => setBorrowingToken(e.target.value)}
+                labelName='Borrowing Token:'
               />
               <Input
                 label='Borrowing Amount:'
@@ -208,9 +216,13 @@ const App = () => {
 
             <div className='w-full justify-between flex space-x-4'>
               <DropdownInput
-                options={tokenOptions}
+                options={Object.entries(tokenOptions).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
                 value={collateralToken}
                 onChange={(e) => setCollateralToken(e.target.value)}
+                labelName='Collateral Token:'
               />
               <Input
                 label='Collateral Amount:'
@@ -228,6 +240,15 @@ const App = () => {
               required
               textarea
             />
+
+            <div className='flex justify-end mb-4'>
+              <DropdownInput
+                options={emiOptions}
+                value={emiPlan}
+                onChange={(e) => setEmiPlan(e.target.value)}
+                labelName='EMI Plan:'
+              />
+            </div>
 
             <h2 className='text-xl font mb-4' style={{ color: '#0bb489' }}>
               Borrower Details
