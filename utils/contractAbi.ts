@@ -16,6 +16,16 @@ const contractABI =[
 				"internalType": "bytes",
 				"name": "paymentReference",
 				"type": "bytes"
+			},
+			{
+				"internalType": "address",
+				"name": "collateral",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
 			}
 		],
 		"name": "borrowcallTransferWithFee",
@@ -34,6 +44,11 @@ const contractABI =[
 				"internalType": "bytes",
 				"name": "paymentReference",
 				"type": "bytes"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
 			}
 		],
 		"name": "depositcallTransferWithFee",
@@ -76,6 +91,11 @@ const contractABI =[
 				"internalType": "bytes",
 				"name": "paymentReference",
 				"type": "bytes"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
 			}
 		],
 		"name": "payReq",
@@ -89,6 +109,16 @@ const contractABI =[
 				"internalType": "bytes",
 				"name": "paymentReference",
 				"type": "bytes"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "collateral",
+				"type": "address"
 			}
 		],
 		"name": "repayLoan",
@@ -127,19 +157,11 @@ const contractABI =[
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
-			}
-		],
-		"name": "transferCollateralToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
+			},
 			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
 			}
 		],
 		"name": "transferToken",
@@ -200,6 +222,11 @@ const contractABI =[
 				"internalType": "bytes",
 				"name": "paymentReference",
 				"type": "bytes"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
 			}
 		],
 		"name": "withdraw",
@@ -212,7 +239,18 @@ const contractABI =[
 		"type": "receive"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "collateral",
+				"type": "address"
+			}
+		],
 		"name": "amount_borrow",
 		"outputs": [
 			{
@@ -225,7 +263,13 @@ const contractABI =[
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			}
+		],
 		"name": "amount_deposit",
 		"outputs": [
 			{
@@ -238,33 +282,12 @@ const contractABI =[
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "collateralTokenAddress",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "address",
 				"name": "",
 				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "collateralTokenContract",
-		"outputs": [
-			{
-				"internalType": "contract IERC20",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
+			},
 			{
 				"internalType": "address",
 				"name": "",
@@ -298,6 +321,16 @@ const contractABI =[
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"name": "loans",
@@ -327,26 +360,43 @@ const contractABI =[
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "loanTokenAddress",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "tokenAddress",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "collateral",
+				"type": "address"
+			}
+		],
+		"name": "principal_amount_borrow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "loanTokenContract",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "principal_amount_deposit",
 		"outputs": [
 			{
-				"internalType": "contract IERC20",
+				"internalType": "uint256",
 				"name": "",
-				"type": "address"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
