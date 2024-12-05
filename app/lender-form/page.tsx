@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
-import { providers, utils } from 'ethers';
+import { providers} from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import {
   RequestNetwork,
@@ -12,7 +12,6 @@ import { ethers } from 'ethers';
 import contractABI from '@/utils/contractAbi';
 import Navbar from '@/components/Navbar';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
-import { useAppContext } from '@/utils/context';
 import Input from '@/components/input';
 import DropdownInput from '@/components/dropDownInput';
 import tokenOptions from '@/utils/tokenOptions';

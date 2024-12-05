@@ -19,7 +19,7 @@ const Navbar: FC = () => {
       setEthersProvider(null);
     }
   }, [wallet]);
-
+  console.log(ethersProvider);
   return (
     <nav className='w-full bg-[#038962] p-4 flex justify-between items-center shadow-lg'>
       <div className='flex items-center'>

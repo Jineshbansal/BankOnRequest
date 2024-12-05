@@ -1,12 +1,10 @@
 'use client';
 import('@requestnetwork/create-invoice-form');
-import CreateInvoiceForm from '@requestnetwork/create-invoice-form/react';
 import { useEffect, useRef } from 'react';
 import { config } from '@/utils/config';
 import { useAppContext } from '@/utils/context';
 import { CreateInvoiceFormProps } from '@/types';
 import Navbar from '@/components/Navbar';
-import { currencies } from '@/utils/currencies';
 import { wagmiConfig } from '@/utils/connectWallet';
 
 export default function CreateInvoice() {

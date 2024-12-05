@@ -5,7 +5,6 @@ import { config } from '@/utils/config';
 import { useAppContext } from '@/utils/context';
 import { InvoiceDashboardProps } from '@/types';
 import { useConnectWallet } from '@web3-onboard/react';
-import { RequestNetwork, Types } from '@requestnetwork/request-client.js';
 import { wagmiConfig } from '@/utils/connectWallet';
 import Navbar from '@/components/Navbar';
 
@@ -14,11 +13,6 @@ export default function InvoiceDashboard() {
   const { requestNetwork } = useAppContext();
   const dashboardRef = useRef<InvoiceDashboardProps>(null);
 
-  const requestClient = new RequestNetwork({
-    nodeConnectionConfig: {
-      baseURL: 'https://sepolia.gateway.request.network/',
-    },
-  });
 
   useEffect(() => {
     if (dashboardRef.current) {

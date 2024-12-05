@@ -49,7 +49,7 @@ const App = () => {
   console.log('payerIdentity:', payerIdentity);
 
   useEffect(() => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
   }, []);
 
@@ -70,11 +70,11 @@ const App = () => {
         expectedAmount: loanAmount.toString(),
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity,
+          value: payeeIdentity ?? '',
         },
         payer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payerIdentity,
+          value: payerIdentity ?? '',
         },
         timestamp: Utils.getCurrentTimestampInSecond(),
       },
@@ -82,21 +82,21 @@ const App = () => {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
           paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity,
+          paymentAddress: payeeIdentity??'',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
         },
       },
       contentData: {
         creationDate: Utils.getCurrentTimestampInSecond(),
-        reason: description,
+        reason: description ?? '',
         requestType: 'borrow',
         dueDate: '2023.06.16',
         emiPlan: emiPlan,
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payeeIdentity,
+        value: payeeIdentity??'',
       },
     };
     const provider = new providers.Web3Provider(window.ethereum);
@@ -116,11 +116,10 @@ const App = () => {
       },
       signatureProvider: web3SignatureProvider,
     });
-    const tokenAddress = borrowingToken;
     const collateralTokenAddress = collateralToken;
     await checkAndApproveToken(
       collateralTokenAddress,
-      payeeIdentity,
+      payeeIdentity ?? '',
       provider,
       giveAmount.toString() + '0'
     );
@@ -149,7 +148,7 @@ const App = () => {
     const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
-    const data = await contract.borrowcallTransferWithFee(
+    await contract.borrowcallTransferWithFee(
       loanAmount,
       giveAmount,
       payref
