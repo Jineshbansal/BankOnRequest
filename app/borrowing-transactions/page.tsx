@@ -23,11 +23,6 @@ export default function InvoiceDashboard() {
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
 
-<<<<<<< HEAD:app/borrowing-transactions/page.tsx
-  const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-=======
-
-  
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
   const handleWithdraw = async () => {
     console.log('withdraw');
@@ -38,7 +33,7 @@ export default function InvoiceDashboard() {
     const payeeIdentity = wallet?.accounts[0].address;
 
     const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const contract = new ethers.Contract(contractAddress??'', contractABI, signer);
     const lendAmount = await contract.amount_deposit();
     console.log('lendAmount', lendAmount);
     if (lendAmount == 0) {
@@ -114,7 +109,6 @@ export default function InvoiceDashboard() {
     console.log('data', data.hash);
     alert('Form submitted successfully');
   };
->>>>>>> 5990d2e (reduce errors):app/custom-dashboard/page.tsx
 
   const handleDeposit = async () => {
     console.log('deposit');
