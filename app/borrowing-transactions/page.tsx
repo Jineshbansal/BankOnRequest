@@ -52,24 +52,24 @@ export default function InvoiceDashboard() {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-          network: 'sepolia',
+          network: 'sepolia' as Types.RequestLogic.ICurrency['network'],
         },
         expectedAmount: loanAmount.toString(),
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity,
+          value: payeeIdentity??'',
         },
         payer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payerIdentity,
+          value: payerIdentity??'',
         },
         timestamp: Utils.getCurrentTimestampInSecond(),
       },
       paymentNetwork: {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
-          paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity,
+          paymentNetworkName: 'sepolia' as Types.RequestLogic.ICurrency['network'],
+          paymentAddress: payeeIdentity??'',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
         },
@@ -82,7 +82,7 @@ export default function InvoiceDashboard() {
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payerIdentity,
+        value: payerIdentity??'',
       },
     };
 
@@ -124,6 +124,10 @@ export default function InvoiceDashboard() {
     console.log('data', data.hash);
     setLoadingMessage('Deposit Successful');
     setLoading(false);
+    console.log(PaymentReferenceCalculator);
+    console.log(checkAndApproveToken);
+    console.log('requestClient', requestCreateParameters);
+    console.log(requestClient)
   };
 
   useEffect(() => {
@@ -136,7 +140,9 @@ export default function InvoiceDashboard() {
           value: wallet?.accounts[0].address.toLowerCase() as string,
         })
         .then((requests) => {
+          
           const requestDatas = requests.map((request) => request.getData());
+          console.log('requestDatas',requestDatas);
           const filteredRequests = requestDatas.filter(
             (request) =>
               request.contentData.requestType === 'borrow' &&
@@ -146,7 +152,7 @@ export default function InvoiceDashboard() {
                   wallet.accounts[0].address.toLowerCase())
           );
           console.log('filteredRequests', filteredRequests);
-
+          
           const active = filteredRequests.filter(
             (invoice) =>
               invoice.payee?.value.toLowerCase() ===
@@ -158,20 +164,26 @@ export default function InvoiceDashboard() {
               invoice.payer?.value.toLowerCase() ===
               wallet.accounts[0].address.toLowerCase()
           );
+          console.log('size:', previous.length);
+          let maxCreationDate;
+          if(previous.length === 0){
+            maxCreationDate=0;
+          }else{
+            const maxCreationDateObject = previous.reduce((max, current) => {
+              return (current.contentData.creationDate > max.contentData.creationDate) ? current : max;
+            }, previous[0]);
+            maxCreationDate = maxCreationDateObject.contentData.creationDate;
+            console.log("maxCreationDate", maxCreationDate); 
+          }
+          
 
           const updatedActive = active.filter(
             (activeRequest) =>
-              previous.length === 0 ||
-              previous.some(
-                (previousRequest) =>
-                  !(
-                    activeRequest.contentData.creationDate <
-                      previousRequest.contentData.creationDate &&
-                    activeRequest.currencyInfo.value ===
-                      previousRequest.currencyInfo.value
-                  )
-              )
+              activeRequest.contentData.creationDate > maxCreationDate
           );
+          console.log("active" , active);
+          console.log("previous" , previous);
+          console.log("updatedActive" , updatedActive);
 
           setActiveRequests(updatedActive);
           setPreviousRequests(previous);

@@ -17,7 +17,7 @@ import DropdownInput from '@/components/dropDownInput';
 import tokenOptions from '@/utils/tokenOptions';
 import Spinner from '@/components/spinner';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-import InvoiceDocument from '@/components/InvoiceDocument';
+import InvoiceDocument from '@/components/InvoiceDocumentLender';
 
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
@@ -62,7 +62,6 @@ const App = () => {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: lendingToken,
-          token: tokenOptions[lendingToken],
           network: 'sepolia' as Types.RequestLogic.ICurrency['network'],
         },
         expectedAmount: loanAmount.toString(),
@@ -368,10 +367,12 @@ const App = () => {
                 tokenOptions={tokenOptions}
               />
             }
-            fileName='invoice.pdf'
+            fileName='invoice_lend.pdf'
             className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
             style={{ backgroundColor: '#0bb489' }}
-          ></PDFDownloadLink>
+          >
+            Download Invoice
+          </PDFDownloadLink>
         </div>
       </div>
     </div>

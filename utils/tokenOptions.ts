@@ -1,5 +1,6 @@
+import { Types } from '@requestnetwork/request-client.js';
 interface TokenOptions {
-  [key: string]: string;
+  [key: string]:string ;
 }
 
 const tokenOptions: TokenOptions = {

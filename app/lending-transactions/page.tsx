@@ -6,7 +6,7 @@ import { RequestNetwork } from '@requestnetwork/request-client.js';
 import Navbar from '@/components/Navbar';
 import { ethers } from 'ethers';
 import contractABI from '@/utils/contractAbi';
-import { providers, utils } from 'ethers';
+import { providers } from 'ethers';
 import {
   Types,
   Utils,
@@ -169,22 +169,25 @@ export default function InvoiceDashboard() {
               invoice.payee?.value.toLowerCase() ===
               wallet.accounts[0].address.toLowerCase()
           );
+          console.log('size:', previous.length);
+          let maxCreationDate;
+          if(previous.length === 0){
+            maxCreationDate=0;
+          }else{
+            const maxCreationDateObject = previous.reduce((max, current) => {
+              return (current.contentData.creationDate > max.contentData.creationDate) ? current : max;
+            }, previous[0]);
+            maxCreationDate = maxCreationDateObject.contentData.creationDate;
+            console.log("maxCreationDate", maxCreationDate); 
+          }
+          
 
           console.log('active', active);
           console.log('previous', previous);
 
           const updatedActive = active.filter(
             (activeRequest) =>
-              previous.length === 0 ||
-              previous.some(
-                (previousRequest) =>
-                  !(
-                    activeRequest.contentData.creationDate <
-                      previousRequest.contentData.creationDate &&
-                    activeRequest.currencyInfo.value ===
-                      previousRequest.currencyInfo.value
-                  )
-              )
+              activeRequest.contentData.creationDate > maxCreationDate
           );
 
           console.log('updatedActive', updatedActive);

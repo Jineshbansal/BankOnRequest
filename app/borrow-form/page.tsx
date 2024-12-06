@@ -16,6 +16,8 @@ import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import DropdownInput from '@/components/dropDownInput';
 import tokenOptions from '@/utils/tokenOptions';
 import Spinner from '@/components/spinner';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import InvoiceDocument from '@/components/InvoiceDocumentBorrower';
 
 const App = () => {
   const [borrowingToken, setBorrowingToken] = useState(
@@ -134,12 +136,11 @@ const App = () => {
 
     const loanAmount = ethers.utils.parseUnits(borrowingAmount, 18);
     const giveAmount = ethers.utils.parseUnits(collateralAmount, 18);
-    const requestCreateParameters = {
+    const requestCreateParameters: Types.ICreateRequestParameters = {
       requestInfo: {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: borrowingToken,
-          token: tokenOptions[borrowingToken],
           network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),
@@ -249,17 +250,6 @@ const App = () => {
     setLoading(false);
   };
 
-  const downloadInvoice = () => {
-    const element = document.createElement('a');
-    const invoiceContent = document.querySelector('.invoice')?.innerHTML;
-    const blob = new Blob([invoiceContent || ''], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    element.href = url;
-    element.download = 'invoice.html';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
 
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar'>
@@ -526,15 +516,30 @@ const App = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={downloadInvoice}
+          <PDFDownloadLink
+            document={
+              <InvoiceDocument
+                issuedDate={issuedDate}
+                payeeIdentity={payeeIdentity} 
+                firstName={firstName}
+                lastName={lastName}
+                email={email}
+                address={address}
+                city={city}
+                postalCode={postalCode}
+                country={country}
+                borrowingToken={borrowingToken} 
+                borrowingAmount={borrowingAmount} 
+                description={description}
+                tokenOptions={tokenOptions}
+              />
+            }
+            fileName='invoice_borrow.pdf'
             className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
-            style={{
-              backgroundColor: '#0bb489',
-            }}
+            style={{ backgroundColor: '#0bb489' }}
           >
             Download Invoice
-          </button>
+          </PDFDownloadLink>
         </div>
       </div>
     </div>
