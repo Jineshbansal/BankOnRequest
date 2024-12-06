@@ -124,6 +124,7 @@ const App = () => {
       signatureProvider: web3SignatureProvider,
     });
     const collateralTokenAddress = collateralToken;
+    console.log('collateraladdress',collateralToken);
     await checkAndApproveToken(
       collateralTokenAddress,
       payeeIdentity ?? '',
@@ -156,6 +157,7 @@ const App = () => {
       process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
+    console.log('giveamount',giveAmount.toString());
     await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
