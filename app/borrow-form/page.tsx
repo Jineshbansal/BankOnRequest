@@ -15,6 +15,7 @@ import Input from '@/components/input';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import DropdownInput from '@/components/dropDownInput';
 import tokenOptions from '@/utils/tokenOptions';
+import Spinner from '@/components/spinner';
 
 const App = () => {
   const [borrowingToken, setBorrowingToken] = useState(
@@ -36,6 +37,10 @@ const App = () => {
   const [issuedDate, setIssuedDate] = useState('');
   const [duration, setDuration] = useState('');
   const [totalInstallments, setTotalInstallments] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [totalInterest, setTotalInterest] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
 
   const durationOptions = [
     { value: 'minutes', label: 'Minutes' },
@@ -60,8 +65,70 @@ const App = () => {
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
   }, []);
 
+  const calculateInterest = (
+    amount: string,
+    duration: string,
+    installments: string
+  ) => {
+    const principal = parseFloat(amount);
+    const interestRate = 0.12;
+    let durationInYears = 0;
+
+    switch (duration) {
+      case 'minutes':
+        durationInYears = 1 / (60 * 24 * 365);
+        break;
+      case 'hours':
+        durationInYears = 1 / (24 * 365);
+        break;
+      case 'days':
+        durationInYears = 1 / 365;
+        break;
+      case 'weeks':
+        durationInYears = 1 / 52;
+        break;
+      case 'months':
+        durationInYears = 1 / 12;
+        break;
+      default:
+        durationInYears = 1;
+    }
+
+    const totalInterest =
+      principal * interestRate * durationInYears * parseInt(installments);
+    const totalAmount = principal + totalInterest;
+    return { totalInterest, totalAmount };
+  };
+
+  useEffect(() => {
+    if (borrowingAmount && duration && totalInstallments) {
+      const { totalInterest, totalAmount } = calculateInterest(
+        borrowingAmount,
+        duration,
+        totalInstallments
+      );
+      setTotalInterest(totalInterest.toString());
+      setTotalAmount(totalAmount.toString());
+    } else {
+      setTotalInterest('');
+      setTotalAmount('');
+    }
+  }, [borrowingAmount, duration, totalInstallments]);
+
+  const calculateTotalPayment = (
+    amount: string,
+    duration: string,
+    installments: string
+  ) => {
+    const { totalAmount } = calculateInterest(amount, duration, installments);
+    if (totalInstallments === '') return totalAmount;
+    return totalAmount / parseInt(installments);
+  };
+
   const submitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
+    setLoading(true);
+    setLoadingMessage('Creating request...');
     console.log('payeeIdentity:', payeeIdentity);
     console.log('payerIdentity:', payerIdentity);
 
@@ -100,6 +167,17 @@ const App = () => {
         reason: description ?? '',
         requestType: 'borrow',
         dueDate: '2023.06.16',
+        borrowerInfo: {
+          firstName: firstName,
+          lastName: lastName,
+          address: {
+            country: country,
+            postalCode: postalCode,
+            city: city,
+            address: address,
+          },
+          email: email,
+        },
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -124,7 +202,8 @@ const App = () => {
       signatureProvider: web3SignatureProvider,
     });
     const collateralTokenAddress = collateralToken;
-    console.log('collateraladdress',collateralToken);
+    console.log('collateraladdress', collateralToken);
+    setLoadingMessage('Checking and approving collateral token...');
     await checkAndApproveToken(
       collateralTokenAddress,
       payeeIdentity ?? '',
@@ -133,7 +212,9 @@ const App = () => {
     );
     console.log('request Client:', requestClient);
     console.log('request create parameters', requestCreateParameters);
+    setLoadingMessage('Creating request on the network...');
     const request = await requestClient.createRequest(requestCreateParameters);
+    setLoadingMessage('Waiting for request confirmation...');
 
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
@@ -148,7 +229,6 @@ const App = () => {
     );
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
-    alert('Wallet connected successfully!');
     console.log('Request Parameters:', requestCreateParameters);
 
     const payref = '0x' + paymentReference;
@@ -157,13 +237,16 @@ const App = () => {
       process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
-    console.log('giveamount',giveAmount.toString());
+    console.log('giveamount', giveAmount.toString());
+    setLoadingMessage('Processing transaction...');
     await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);
     // console.log('data', data.hash);
     // alert('Form submitted successfully');
+    setLoadingMessage('Request successfully created!');
+    setLoading(false);
   };
 
   const downloadInvoice = () => {
@@ -181,6 +264,12 @@ const App = () => {
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar'>
       <Navbar />
+      {loading && (
+        <div className='fixed inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-75 z-50'>
+          <Spinner />
+          <div className='text-white text-xl mt-4'>{loadingMessage}</div>
+        </div>
+      )}
       <div className='flex flex-wrap md:flex-nowrap'>
         <div className='md:w-1/2 p-4 pr-2 h-cover'>
           <form
@@ -336,7 +425,7 @@ const App = () => {
             </button>
           </form>
         </div>
-        <div className='md:w-1/2 p-4 pl-2 h-screen relative'>
+        <div className='md:w-1/2 p-4 pl-2 h-content relative'>
           <div className='w-full bg-white shadow-md rounded-lg p-8 h-full flex flex-col justify-between invoice'>
             <div>
               <div className='flex justify-between mb-6'>
@@ -376,6 +465,12 @@ const App = () => {
                     <p className='mb-2'>Borrowed Token: {borrowingToken}</p>
                     <p className='mb-2'>Collateral Token: {collateralToken}</p>
                     <p className='mb-2'>Description: {description}</p>
+                    <p className='mb-2'>Payment Frequency: {duration}</p>
+                    {totalInstallments && (
+                      <p className='mb-2'>
+                        Total Installments: {totalInstallments}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className='mb-2'>Borrowed Amount: {borrowingAmount}</p>
@@ -384,6 +479,36 @@ const App = () => {
                     </p>
                   </div>
                 </div>
+                {totalInterest && totalAmount && (
+                  <div className='mt-4'>
+                    <h3
+                      className='text-lg font mb-2'
+                      style={{ color: '#0bb489' }}
+                    >
+                      Calculation Breakdown:
+                    </h3>
+                    <div className='flex justify-between'>
+                      <div className='w-1/2'>
+                        <p className='mb-2'>
+                          Principal Amount: {borrowingAmount}
+                        </p>
+                        <p className='mb-2'>Interest Rate: 12% per annum</p>
+                        <p className='mb-2'>
+                          Total Amount per installment:{' '}
+                          {calculateTotalPayment(
+                            borrowingAmount,
+                            duration,
+                            totalInstallments
+                          )}
+                        </p>
+                      </div>
+                      <div className='w-1/2'>
+                        <p className='mb-2'>Total Interest: {totalInterest}</p>
+                        <p className='mb-2'>Total Amount: {totalAmount}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className='mt-6'>

@@ -15,6 +15,7 @@ import {
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import tokenOptions from '@/utils/tokenOptions';
+import Spinner from '@/components/spinner';
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -22,11 +23,15 @@ export default function InvoiceDashboard() {
   const [activeTab, setActiveTab] = useState('active');
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
   const handleDeposit = async () => {
     console.log('deposit');
+    setLoading(true);
+    setLoadingMessage('Processing request...');
     const provider = new providers.Web3Provider(window.ethereum);
     const accounts = await provider.send('eth_accounts', []);
     console.log('Accounts:', accounts);
@@ -88,6 +93,7 @@ export default function InvoiceDashboard() {
       },
       signatureProvider: web3SignatureProvider,
     });
+    setLoadingMessage('Waiting for Confirmation...');
     const request = await requestClient.createRequest(requestCreateParameters);
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
@@ -116,11 +122,14 @@ export default function InvoiceDashboard() {
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
     console.log('data', data.hash);
-    alert('Form submitted successfully');
+    setLoadingMessage('Deposit Successful');
+    setLoading(false);
   };
 
   useEffect(() => {
     if (wallet) {
+      setLoading(true);
+      setLoadingMessage('Fetching requests...');
       requestNetwork
         ?.fromIdentity({
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -167,6 +176,7 @@ export default function InvoiceDashboard() {
           setActiveRequests(updatedActive);
           setPreviousRequests(previous);
         });
+      setLoading(false);
     }
   }, [wallet, requestNetwork]);
 
@@ -177,13 +187,22 @@ export default function InvoiceDashboard() {
     created: new Date(invoice.timestamp * 1000).toLocaleDateString(),
     paymentNetwork: invoice.currencyInfo.network,
     token: invoice.currencyInfo.value,
-    amount: invoice.expectedAmount,
+    amount: (invoice.expectedAmount / 1e18).toString(),
     actionType: activeTab === 'active' ? 'Deposit' : 'Completed',
+    requestId: `${invoice.requestId.slice(0, 4)}...${invoice.requestId.slice(
+      -3
+    )}`,
   }));
 
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar bg-[f3f4f6]'>
       <Navbar />
+      {loading && (
+        <div className='fixed inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-75 z-50'>
+          <Spinner />
+          <div className='text-white text-xl mt-4'>{loadingMessage}</div>
+        </div>
+      )}
       <div className='container mx-auto p-4'>
         <div className='flex justify-center mb-4'>
           <button
@@ -212,6 +231,7 @@ export default function InvoiceDashboard() {
             <thead className='bg-[#0bb489] text-white'>
               <tr>
                 <th className='py-2 px-4 border-b text-left'>Created</th>
+                <th className='py-2 px-4 border-b text-left'>Request ID</th>
                 <th className='py-2 px-2 border-b text-left'>
                   Payment Network
                 </th>
@@ -229,6 +249,7 @@ export default function InvoiceDashboard() {
                   token: string;
                   amount: string;
                   actionType: string;
+                  requestId: string;
                 }) => (
                   <tr
                     key={invoice.key}
@@ -236,6 +257,9 @@ export default function InvoiceDashboard() {
                   >
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.created}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.requestId}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.paymentNetwork}

@@ -15,6 +15,9 @@ import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import Input from '@/components/input';
 import DropdownInput from '@/components/dropDownInput';
 import tokenOptions from '@/utils/tokenOptions';
+import Spinner from '@/components/spinner';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import InvoiceDocument from '@/components/InvoiceDocument';
 
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
@@ -31,6 +34,8 @@ const App = () => {
   const [{ wallet }] = useConnectWallet();
   const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
   const payerIdentity = wallet?.accounts[0].address;
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
 
@@ -46,6 +51,8 @@ const App = () => {
 
   const submitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
+    setLoading(true);
+    setLoadingMessage('Creating request...');
     console.log('payeeIdentity:', payeeIdentity);
     console.log('payerIdentity:', payerIdentity);
     const loanAmount = ethers.utils.parseUnits(lendingAmount, 18);
@@ -83,6 +90,17 @@ const App = () => {
         reason: description,
         requestType: 'lend',
         dueDate: '2023.06.16',
+        lenderInfo: {
+          firstName: firstName,
+          lastName: lastName,
+          address: {
+            country: country,
+            postal: postalCode,
+            city: city,
+            address: address,
+          },
+          email: email,
+        },
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -102,6 +120,7 @@ const App = () => {
       signatureProvider: web3SignatureProvider,
     });
     const request = await requestClient.createRequest(requestCreateParameters);
+    setLoadingMessage('Waiting for request confirmation...');
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
     const tokenAddress = lendingToken;
@@ -116,6 +135,7 @@ const App = () => {
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     console.log('Request Parameters:', requestCreateParameters);
+    setLoadingMessage('Approving token...');
     await checkAndApproveToken(
       tokenAddress,
       payerIdentity ?? '',
@@ -128,29 +148,34 @@ const App = () => {
     console.log('contractAddress:', contractAddress);
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    setLoadingMessage('Executing contract...');
     const data = await contract.depositcallTransferWithFee(loanAmount, payref);
     await data.wait();
+    setLoading(false);
+    setLendingToken('');
+    setLendingAmount('');
+    setDescription('');
+    setFirstName('');
+    setLastName('');
+    setEmail('');
+    setCountry('');
+    setCity('');
+    setPostalCode('');
+    setAddress('');
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
     console.log('data', data.hash);
-    alert('Form submitted successfully');
-  };
-
-  const downloadInvoice = () => {
-    const element = document.createElement('a');
-    const invoiceContent = document.querySelector('.invoice')?.innerHTML;
-    const blob = new Blob([invoiceContent || ''], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    element.href = url;
-    element.download = 'invoice.html';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
   };
 
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar'>
       <Navbar />
+      {loading && (
+        <div className='fixed inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-75 z-50'>
+          <Spinner />
+          <div className='text-white text-xl mt-4'>{loadingMessage}</div>
+        </div>
+      )}
       <div className='flex flex-wrap md:flex-nowrap'>
         <div className='md:w-1/2 p-4 pr-2 h-cover'>
           <form
@@ -325,15 +350,28 @@ const App = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={downloadInvoice}
+          <PDFDownloadLink
+            document={
+              <InvoiceDocument
+                issuedDate={issuedDate}
+                payerIdentity={payerIdentity}
+                firstName={firstName}
+                lastName={lastName}
+                email={email}
+                address={address}
+                city={city}
+                postalCode={postalCode}
+                country={country}
+                lendingToken={lendingToken}
+                lendingAmount={lendingAmount}
+                description={description}
+                tokenOptions={tokenOptions}
+              />
+            }
+            fileName='invoice.pdf'
             className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
-            style={{
-              backgroundColor: '#0bb489',
-            }}
-          >
-            Download Invoice
-          </button>
+            style={{ backgroundColor: '#0bb489' }}
+          ></PDFDownloadLink>
         </div>
       </div>
     </div>

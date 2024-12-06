@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
+    "@react-pdf/renderer": "^4.1.5",
     "@requestnetwork/create-invoice-form": "^0.11.3",
     "@requestnetwork/invoice-dashboard": "^0.11.1",
     "@requestnetwork/request-client.js": "^0.50.0",
