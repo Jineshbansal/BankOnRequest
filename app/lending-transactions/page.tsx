@@ -28,7 +28,7 @@ export default function InvoiceDashboard() {
 
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
-  const handleWithdraw = async () => {
+  const handleWithdraw = async (lendingToken:string) => {
     setLoading(true);
     setLoadingMessage('Creating withdrawal request...');
     try {
@@ -45,7 +45,7 @@ export default function InvoiceDashboard() {
         contractABI,
         signer
       );
-      const lendAmount = await contract.amount_deposit();
+      const lendAmount = await contract.amount_deposit(lendingToken);
       console.log('lendAmount', lendAmount);
       if (lendAmount == 0) {
         alert('you donot lend any money to us');
@@ -122,7 +122,7 @@ export default function InvoiceDashboard() {
       setLoadingMessage('Transferring funds to user account with interest...');
       const payref = '0x' + paymentReference;
       console.log('payref', payref);
-      const data = await contract.withdraw(payref);
+      const data = await contract.withdraw(payref,lendingToken);
       await data.wait();
       console.log('payerIdentity', payerIdentity);
       console.log('payeeIdentity', payeeIdentity);
@@ -297,7 +297,7 @@ export default function InvoiceDashboard() {
                       {activeTab === 'active' ? (
                         <button
                           className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
-                          onClick={() => handleWithdraw()}
+                          onClick={() => handleWithdraw(invoice.token)}
                         >
                           {invoice.actionType}
                         </button>

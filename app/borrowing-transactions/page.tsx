@@ -5,7 +5,7 @@ import { useConnectWallet } from '@web3-onboard/react';
 import { RequestNetwork } from '@requestnetwork/request-client.js';
 import Navbar from '@/components/Navbar';
 import { ethers } from 'ethers';
-import contractABI from '@/utils/contractAbiBorrower';
+import contractABI from '@/utils/contractAbi';
 import { providers } from 'ethers';
 import {
   Types,
@@ -17,6 +17,7 @@ import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import tokenOptions from '@/utils/tokenOptions';
 import Spinner from '@/components/spinner';
+
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -30,31 +31,30 @@ export default function InvoiceDashboard() {
 
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
-  const handleDeposit = async () => {
+  const handleDeposit = async (borrowingToken:string,collateralToken:string) => {
     console.log('deposit');
     setLoading(true);
     setLoadingMessage('checking details of loan...');
     const provider = new providers.Web3Provider(window.ethereum);
-    const accounts = await provider.send('eth_accounts', []);
-    console.log('Accounts:', accounts);
     const payerIdentity = wallet?.accounts[0].address;
     const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-
     const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const loanAmount = await contract.amount_borrow();
-    console.log('loanAmount', loanAmount);
+    const loanAmount = await contract.principal_amount_borrow(borrowingToken,collateralToken);
+    const loan=await contract.getLoan(payerIdentity,borrowingToken,collateralToken);
     if (loanAmount == 0) {
       alert('you donot loan any money from us');
       return;
     }
     setLoadingMessage('Creating repay loan request...');
+    console.log('borrowing', borrowingToken);
+    console.log('loanAmount', loan);
     const requestCreateParameters = {
       requestInfo: {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
-          value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-          network: 'sepolia' as CurrencyTypes.ChainName,
+          value: borrowingToken,
+          network: 'sepolia',
         },
         expectedAmount: loanAmount.toString(),
         payee: {
@@ -70,7 +70,7 @@ export default function InvoiceDashboard() {
       paymentNetwork: {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
-          paymentNetworkName: 'sepolia' as CurrencyTypes.ChainName,
+          paymentNetworkName: 'sepolia',
           paymentAddress: payeeIdentity??'',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
@@ -80,26 +80,30 @@ export default function InvoiceDashboard() {
         creationDate: Utils.getCurrentTimestampInSecond(),
         requestType: 'borrow',
         reason: 'deposit',
-        dueDate: '2023.06.16',
+        dueDate: '2025.06.16',
+        collateralToken:collateralToken,
+        collateralAmount:loan.collateralAmount.toString(),
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
         value: payerIdentity??'',
       },
     };
-
+    console.log('requestCreateParameters', requestCreateParameters);
     const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
     const requestClient = new RequestNetwork({
       nodeConnectionConfig: {
-        baseURL: 'https://gnosis.gateway.request.network/',
+        baseURL: 'https://sepolia.gateway.request.network/',
       },
       signatureProvider: web3SignatureProvider,
     });
+
     const request = await requestClient.createRequest(requestCreateParameters);
     setLoadingMessage('Waiting for Confirmation...');
+    console.log('request', request);
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
-    const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
+    console.log('requestID', requestID);
     const salt =
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
         .salt;
@@ -113,14 +117,14 @@ export default function InvoiceDashboard() {
     console.log('Request Parameters:', requestCreateParameters);
     setLoadingMessage('Checking and Approving Token...');
     await checkAndApproveToken(
-      tokenAddress,
+      borrowingToken,
       payerIdentity ?? '',
       provider,
       loanAmount.toString() + '0'
     );
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
-    const data = await contract.repayLoan(payref);
+    const data = await contract.repayLoan(payref, borrowingToken,collateralToken);
     await data.wait();
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
@@ -132,7 +136,7 @@ export default function InvoiceDashboard() {
     console.log('requestClient', requestCreateParameters);
     console.log(requestClient);
     setCount(count + 1);
-    console.log
+
   };
 
   useEffect(() => {
@@ -205,6 +209,8 @@ export default function InvoiceDashboard() {
     paymentNetwork: invoice.currencyInfo.network,
     token: invoice.currencyInfo.value,
     amount: (invoice.expectedAmount / 1e18).toString(),
+    collateralToken: invoice.contentData.collateralToken,
+    collateralAmount: (invoice.contentData.collateralAmount / 1e18).toString(),
     actionType: activeTab === 'active' ? 'Deposit' : 'Completed',
     requestId: `${invoice.requestId.slice(0, 4)}...${invoice.requestId.slice(
       -3
@@ -253,7 +259,9 @@ export default function InvoiceDashboard() {
                   Payment Network
                 </th>
                 <th className='py-2 pr-32 border-b text-left'>Token</th>
-                <th className='py-2 px-4 border-b text-left'>Amount</th>
+                <th className='py-2 pr-32 border-b text-left'>Amount</th>
+                <th className='py-2 pr-32 border-b text-left'>CollateralTkn</th>
+                <th className='py-2 px-4 border-b text-left'>CollateralAmt</th>
                 <th className='py-2 px-4 border-b text-left'>Action</th>
               </tr>
             </thead>
@@ -265,6 +273,8 @@ export default function InvoiceDashboard() {
                   paymentNetwork: string;
                   token: string;
                   amount: string;
+                  collateralToken: string;
+                  collateralAmount: string;
                   actionType: string;
                   requestId: string;
                 }) => (
@@ -288,10 +298,16 @@ export default function InvoiceDashboard() {
                       {invoice.amount}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
+                      {tokenOptions[invoice.collateralToken as keyof typeof tokenOptions]}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
+                      {invoice.collateralAmount}
+                    </td>
+                    <td className='py-2 px-4 border-b text-left'>
                       {activeTab === 'active' ? (
                         <button
                           className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
-                          onClick={() => handleDeposit()}
+                          onClick={() => handleDeposit(invoice.token,invoice.collateralToken)}
                         >
                           {invoice.actionType}
                         </button>

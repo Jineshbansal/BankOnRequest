@@ -67,7 +67,22 @@ const App = () => {
     };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
   }, []);
-
+  const durInSecond =(duration: string) => {
+    switch (duration) {
+      case 'minutes':
+        return 60;
+      case 'hours':
+        return 60 * 60;
+      case 'days':
+        return 60 * 60 * 24;
+      case 'weeks':
+        return 60 * 60 * 24 * 7;
+      case 'months':
+        return 60 * 60 * 24 * 30;
+      default:
+        return 60 * 60 * 24;
+    }
+  };
   const calculateInterest = (
     amount: string,
     duration: string,
@@ -132,9 +147,6 @@ const App = () => {
     event.preventDefault();
     setLoading(true);
     setLoadingMessage('Creating borrow request...');
-    console.log('payeeIdentity:', payeeIdentity);
-    console.log('payerIdentity:', payerIdentity);
-
     const loanAmount = ethers.utils.parseUnits(borrowingAmount, 18);
     const giveAmount = ethers.utils.parseUnits(collateralAmount, 18);
     const requestCreateParameters: Types.ICreateRequestParameters = {
@@ -168,7 +180,9 @@ const App = () => {
         creationDate: Utils.getCurrentTimestampInSecond(),
         reason: description ?? '',
         requestType: 'borrow',
-        dueDate: '2023.06.16',
+        dueDate: '2025.06.16',
+        collateralAmount: giveAmount.toString(),
+        collateralToken: collateralToken,
         borrowerInfo: {
           firstName: firstName,
           lastName: lastName,
@@ -189,32 +203,28 @@ const App = () => {
     const provider = new providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     console.log('Signer:', signer);
-
     const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
-    console.log('Web3SignatureProvider initialized:', web3SignatureProvider);
-
     const requestClient = new RequestNetwork({
       nodeConnectionConfig: {
         baseURL: 'https://gnosis.gateway.request.network/',
       },
       signatureProvider: web3SignatureProvider,
     });
-    const collateralTokenAddress = collateralToken;
+
     console.log('collateraladdress', collateralToken);
+    console.log('borrowingaddress', borrowingToken);
     setLoadingMessage('Approve collateral token...');
     await checkAndApproveToken(
-      collateralTokenAddress,
+      collateralToken,
       payeeIdentity ?? '',
       provider,
       giveAmount.toString() + '0'
     );
-    console.log('request Client:', requestClient);
-    console.log('request create parameters', requestCreateParameters);
     setLoadingMessage('Creating request on the network...');
     const request = await requestClient.createRequest(requestCreateParameters);
     setLoadingMessage('Waiting for request confirmation...');
-
     const confirmedRequestData = await request.waitForConfirmation();
+    console.log('confirmedRequestData', confirmedRequestData);
     const requestID = confirmedRequestData.requestId;
     const salt =
       confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
@@ -225,10 +235,6 @@ const App = () => {
       salt,
       payeeIdentity ?? ''
     );
-    console.log('paymentReferenceCalculator', paymentReference);
-    console.log('confirmed Request Data:', confirmedRequestData);
-    console.log('Request Parameters:', requestCreateParameters);
-
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
     const contractAddress =
@@ -237,7 +243,9 @@ const App = () => {
     console.log('contractABI', contractABI);
     console.log('giveamount', giveAmount.toString());
     setLoadingMessage('transferring collateral tokens and borrowing tokens...');
-    await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);
+    console.log('borrowingToken', borrowingToken);
+    console.log('collateralToken', collateralToken);
+    await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref,borrowingToken,collateralToken,durInSecond(duration),totalInstallments);
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);

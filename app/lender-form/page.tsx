@@ -89,7 +89,7 @@ const App = () => {
         creationDate: Utils.getCurrentTimestampInSecond(),
         reason: description,
         requestType: 'lend',
-        dueDate: '2023.06.16',
+        dueDate: '2025.06.16',
         lenderInfo: {
           firstName: firstName,
           lastName: lastName,
@@ -149,7 +149,7 @@ const App = () => {
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     setLoadingMessage('Depositing funds...');
-    const data = await contract.depositcallTransferWithFee(loanAmount, payref);
+    const data = await contract.depositcallTransferWithFee(loanAmount, payref,lendingToken);
     await data.wait();
     setLoading(false);
     setLendingToken('');
