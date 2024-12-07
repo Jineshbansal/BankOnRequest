@@ -4,6 +4,7 @@ import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
 import { providers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
+import { CurrencyTypes } from '@requestnetwork/types';
 import {
   RequestNetwork,
   PaymentReferenceCalculator,
@@ -130,7 +131,7 @@ const App = () => {
   const submitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
-    setLoadingMessage('Creating request...');
+    setLoadingMessage('Creating borrow request...');
     console.log('payeeIdentity:', payeeIdentity);
     console.log('payerIdentity:', payerIdentity);
 
@@ -141,7 +142,7 @@ const App = () => {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: borrowingToken,
-          network: 'sepolia',
+          network: 'sepolia' as CurrencyTypes.ChainName,
         },
         expectedAmount: loanAmount.toString(),
         payee: {
@@ -157,7 +158,7 @@ const App = () => {
       paymentNetwork: {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
-          paymentNetworkName: 'sepolia',
+          paymentNetworkName: 'sepolia' as CurrencyTypes.ChainName,
           paymentAddress: payeeIdentity ?? '',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
@@ -186,10 +187,6 @@ const App = () => {
       },
     };
     const provider = new providers.Web3Provider(window.ethereum);
-    console.log('provider', provider);
-    const accounts = await provider.send('eth_accounts', []);
-    console.log('Accounts:', accounts);
-
     const signer = provider.getSigner();
     console.log('Signer:', signer);
 
@@ -204,7 +201,7 @@ const App = () => {
     });
     const collateralTokenAddress = collateralToken;
     console.log('collateraladdress', collateralToken);
-    setLoadingMessage('Checking and approving collateral token...');
+    setLoadingMessage('Approve collateral token...');
     await checkAndApproveToken(
       collateralTokenAddress,
       payeeIdentity ?? '',
@@ -239,20 +236,20 @@ const App = () => {
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     console.log('contractABI', contractABI);
     console.log('giveamount', giveAmount.toString());
-    setLoadingMessage('Processing transaction...');
+    setLoadingMessage('transferring collateral tokens and borrowing tokens...');
     await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref);
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);
     // console.log('data', data.hash);
     // alert('Form submitted successfully');
-    setLoadingMessage('Request successfully created!');
+    setLoadingMessage('successfully borrowed tokens');
     setLoading(false);
   };
 
-
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar'>
+
       <Navbar />
       {loading && (
         <div className='fixed inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-75 z-50'>

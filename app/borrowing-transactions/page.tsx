@@ -12,6 +12,7 @@ import {
   Utils,
   PaymentReferenceCalculator,
 } from '@requestnetwork/request-client.js';
+import { CurrencyTypes } from "@requestnetwork/types";
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import tokenOptions from '@/utils/tokenOptions';
@@ -25,13 +26,14 @@ export default function InvoiceDashboard() {
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [count, setCount] = useState(1);
 
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
   const handleDeposit = async () => {
     console.log('deposit');
     setLoading(true);
-    setLoadingMessage('Processing request...');
+    setLoadingMessage('checking details of loan...');
     const provider = new providers.Web3Provider(window.ethereum);
     const accounts = await provider.send('eth_accounts', []);
     console.log('Accounts:', accounts);
@@ -46,13 +48,13 @@ export default function InvoiceDashboard() {
       alert('you donot loan any money from us');
       return;
     }
-
+    setLoadingMessage('Creating repay loan request...');
     const requestCreateParameters = {
       requestInfo: {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-          network: 'sepolia' as Types.RequestLogic.ICurrency['network'],
+          network: 'sepolia' as CurrencyTypes.ChainName,
         },
         expectedAmount: loanAmount.toString(),
         payee: {
@@ -68,7 +70,7 @@ export default function InvoiceDashboard() {
       paymentNetwork: {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
-          paymentNetworkName: 'sepolia' as Types.RequestLogic.ICurrency['network'],
+          paymentNetworkName: 'sepolia' as CurrencyTypes.ChainName,
           paymentAddress: payeeIdentity??'',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
@@ -93,8 +95,8 @@ export default function InvoiceDashboard() {
       },
       signatureProvider: web3SignatureProvider,
     });
-    setLoadingMessage('Waiting for Confirmation...');
     const request = await requestClient.createRequest(requestCreateParameters);
+    setLoadingMessage('Waiting for Confirmation...');
     const confirmedRequestData = await request.waitForConfirmation();
     const requestID = confirmedRequestData.requestId;
     const tokenAddress = '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82';
@@ -109,6 +111,7 @@ export default function InvoiceDashboard() {
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     console.log('Request Parameters:', requestCreateParameters);
+    setLoadingMessage('Checking and Approving Token...');
     await checkAndApproveToken(
       tokenAddress,
       payerIdentity ?? '',
@@ -127,7 +130,9 @@ export default function InvoiceDashboard() {
     console.log(PaymentReferenceCalculator);
     console.log(checkAndApproveToken);
     console.log('requestClient', requestCreateParameters);
-    console.log(requestClient)
+    console.log(requestClient);
+    setCount(count + 1);
+    console.log
   };
 
   useEffect(() => {
@@ -190,7 +195,7 @@ export default function InvoiceDashboard() {
         });
       setLoading(false);
     }
-  }, [wallet, requestNetwork]);
+  }, [wallet, requestNetwork, count]);
 
   const dataSource = (
     activeTab === 'active' ? activeRequests : previousRequests

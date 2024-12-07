@@ -4,6 +4,7 @@ import { useConnectWallet } from '@web3-onboard/react';
 import { Types, Utils } from '@requestnetwork/request-client.js';
 import { providers } from 'ethers';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
+import { CurrencyTypes } from '@requestnetwork/types';
 import {
   RequestNetwork,
   PaymentReferenceCalculator,
@@ -52,7 +53,7 @@ const App = () => {
   const submitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
-    setLoadingMessage('Creating request...');
+    setLoadingMessage('Creating Deposit request...');
     console.log('payeeIdentity:', payeeIdentity);
     console.log('payerIdentity:', payerIdentity);
     const loanAmount = ethers.utils.parseUnits(lendingAmount, 18);
@@ -62,7 +63,7 @@ const App = () => {
         currency: {
           type: Types.RequestLogic.CURRENCY.ERC20,
           value: lendingToken,
-          network: 'sepolia' as Types.RequestLogic.ICurrency['network'],
+          network: 'sepolia' as CurrencyTypes.ChainName,
         },
         expectedAmount: loanAmount.toString(),
         payee: {
@@ -78,7 +79,7 @@ const App = () => {
       paymentNetwork: {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
-          paymentNetworkName: 'sepolia',
+          paymentNetworkName: 'sepolia' as CurrencyTypes.ChainName,
           paymentAddress: payeeIdentity,
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
@@ -134,7 +135,7 @@ const App = () => {
     console.log('paymentReferenceCalculator', paymentReference);
     console.log('confirmed Request Data:', confirmedRequestData);
     console.log('Request Parameters:', requestCreateParameters);
-    setLoadingMessage('Approving token...');
+    setLoadingMessage('Checking and Approve token...');
     await checkAndApproveToken(
       tokenAddress,
       payerIdentity ?? '',
@@ -147,7 +148,7 @@ const App = () => {
     console.log('contractAddress:', contractAddress);
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    setLoadingMessage('Executing contract...');
+    setLoadingMessage('Depositing funds...');
     const data = await contract.depositcallTransferWithFee(loanAmount, payref);
     await data.wait();
     setLoading(false);

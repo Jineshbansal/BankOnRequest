@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import { ethers } from 'ethers';
 import contractABI from '@/utils/contractAbi';
 import { providers } from 'ethers';
+import { CurrencyTypes } from '@requestnetwork/types';
 import {
   Types,
   Utils,
@@ -29,7 +30,7 @@ export default function InvoiceDashboard() {
 
   const handleWithdraw = async () => {
     setLoading(true);
-    setLoadingMessage('Processing withdrawal...');
+    setLoadingMessage('Creating withdrawal request...');
     try {
       console.log('withdraw');
       const provider = new providers.Web3Provider(window.ethereum);
@@ -58,7 +59,7 @@ export default function InvoiceDashboard() {
           currency: {
             type: Types.RequestLogic.CURRENCY.ERC20,
             value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
-            network: 'sepolia',
+            network: 'sepolia' as CurrencyTypes.ChainName,
           },
           expectedAmount: lendAmount.toString(),
           payee: {
@@ -74,7 +75,7 @@ export default function InvoiceDashboard() {
         paymentNetwork: {
           id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
           parameters: {
-            paymentNetworkName: 'sepolia',
+            paymentNetworkName: 'sepolia' as CurrencyTypes.ChainName,
             paymentAddress: payeeIdentity,
             feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
             feeAmount: '0',
@@ -118,7 +119,7 @@ export default function InvoiceDashboard() {
       console.log('paymentReferenceCalculator', paymentReference);
       console.log('confirmed Request Data:', confirmedRequestData);
       console.log('Request Parameters:', requestCreateParameters);
-
+      setLoadingMessage('Transferring funds to user account with interest...');
       const payref = '0x' + paymentReference;
       console.log('payref', payref);
       const data = await contract.withdraw(payref);
