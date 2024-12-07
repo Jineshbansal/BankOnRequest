@@ -58,7 +58,11 @@ const App = () => {
   const payeeIdentity = wallet?.accounts[0].address;
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
+  const [isBrowser, setIsBrowser] = useState(false);
 
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
   useEffect(() => {
     const options: Intl.DateTimeFormatOptions = {
       year: 'numeric',
@@ -521,30 +525,32 @@ const App = () => {
               </p>
             </div>
           </div>
-          <PDFDownloadLink
+          {isBrowser && (
+            <PDFDownloadLink
             document={
               <InvoiceDocument
-                issuedDate={issuedDate}
-                payeeIdentity={payeeIdentity} 
-                firstName={firstName}
-                lastName={lastName}
-                email={email}
-                address={address}
-                city={city}
-                postalCode={postalCode}
-                country={country}
-                borrowingToken={borrowingToken} 
-                borrowingAmount={borrowingAmount} 
-                description={description}
-                tokenOptions={tokenOptions}
+              issuedDate={issuedDate}
+              payeeIdentity={payeeIdentity} 
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              address={address}
+              city={city}
+              postalCode={postalCode}
+              country={country}
+              borrowingToken={borrowingToken} 
+              borrowingAmount={borrowingAmount} 
+              description={description}
+              tokenOptions={tokenOptions}
               />
             }
             fileName='invoice_borrow.pdf'
             className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
             style={{ backgroundColor: '#0bb489' }}
-          >
+            >
             Download Invoice
           </PDFDownloadLink>
+        )}
         </div>
       </div>
     </div>

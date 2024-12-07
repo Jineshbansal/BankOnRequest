@@ -20,6 +20,7 @@ import Spinner from '@/components/spinner';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import InvoiceDocument from '@/components/InvoiceDocumentLender';
 
+
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
   const [lendingAmount, setLendingAmount] = useState('');
@@ -39,6 +40,11 @@ const App = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   console.log('payeeIdentity:', payeeIdentity);
   console.log('payerIdentity:', payerIdentity);
+  const [isBrowser, setIsBrowser] = useState(false);
+
+  useEffect(() => {
+    setIsBrowser(true);
+  }, []);
 
   useEffect(() => {
     const options: Intl.DateTimeFormatOptions = {
@@ -350,9 +356,11 @@ const App = () => {
               </p>
             </div>
           </div>
-          <PDFDownloadLink
-            document={
-              <InvoiceDocument
+          {
+            isBrowser && (
+              <PDFDownloadLink
+              document={
+                <InvoiceDocument
                 issuedDate={issuedDate}
                 payerIdentity={payerIdentity}
                 firstName={firstName}
@@ -366,14 +374,15 @@ const App = () => {
                 lendingAmount={lendingAmount}
                 description={description}
                 tokenOptions={tokenOptions}
-              />
-            }
-            fileName='invoice_lend.pdf'
-            className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
-            style={{ backgroundColor: '#0bb489' }}
-          >
+                />
+              }
+              fileName='invoice_lend.pdf'
+              className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
+              style={{ backgroundColor: '#0bb489' }}
+              >
             Download Invoice
           </PDFDownloadLink>
+          )}
         </div>
       </div>
     </div>
