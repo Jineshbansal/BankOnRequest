@@ -12,12 +12,10 @@ import {
   Utils,
   PaymentReferenceCalculator,
 } from '@requestnetwork/request-client.js';
-import { CurrencyTypes } from "@requestnetwork/types";
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
 import tokenOptions from '@/utils/tokenOptions';
 import Spinner from '@/components/spinner';
-
 
 export default function InvoiceDashboard() {
   const [{ wallet }] = useConnectWallet();
@@ -28,10 +26,18 @@ export default function InvoiceDashboard() {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [count, setCount] = useState(1);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<string | null>(null);
+  const [selectedCollateralToken, setSelectedCollateralToken] = useState<
+    string | null
+  >(null);
 
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
-  const handleDeposit = async (borrowingToken:string,collateralToken:string) => {
+  const handleDeposit = async (
+    borrowingToken: string,
+    collateralToken: string
+  ) => {
     console.log('deposit');
     setLoading(true);
     setLoadingMessage('checking details of loan...');
@@ -40,8 +46,15 @@ export default function InvoiceDashboard() {
     const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
     const signer = provider.getSigner();
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const loanAmount = await contract.principal_amount_borrow(borrowingToken,collateralToken);
-    const loan=await contract.getLoan(payerIdentity,borrowingToken,collateralToken);
+    const loanAmount = await contract.principal_amount_borrow(
+      borrowingToken,
+      collateralToken
+    );
+    const loan = await contract.getLoan(
+      payerIdentity,
+      borrowingToken,
+      collateralToken
+    );
     if (loanAmount == 0) {
       alert('you donot loan any money from us');
       return;
@@ -59,11 +72,11 @@ export default function InvoiceDashboard() {
         expectedAmount: loanAmount.toString(),
         payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity??'',
+          value: payeeIdentity ?? '',
         },
         payer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payerIdentity??'',
+          value: payerIdentity ?? '',
         },
         timestamp: Utils.getCurrentTimestampInSecond(),
       },
@@ -71,7 +84,7 @@ export default function InvoiceDashboard() {
         id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
         parameters: {
           paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity??'',
+          paymentAddress: payeeIdentity ?? '',
           feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
           feeAmount: '0',
         },
@@ -81,12 +94,12 @@ export default function InvoiceDashboard() {
         requestType: 'borrow',
         reason: 'deposit',
         dueDate: '2025.06.16',
-        collateralToken:collateralToken,
-        collateralAmount:loan.collateralAmount.toString(),
+        collateralToken: collateralToken,
+        collateralAmount: loan.collateralAmount.toString(),
       },
       signer: {
         type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payerIdentity??'',
+        value: payerIdentity ?? '',
       },
     };
     console.log('requestCreateParameters', requestCreateParameters);
@@ -124,7 +137,11 @@ export default function InvoiceDashboard() {
     );
     const payref = '0x' + paymentReference;
     console.log('payref', payref);
-    const data = await contract.repayLoan(payref, borrowingToken,collateralToken);
+    const data = await contract.repayLoan(
+      payref,
+      borrowingToken,
+      collateralToken
+    );
     await data.wait();
     console.log('payerIdentity', payerIdentity);
     console.log('payeeIdentity', payeeIdentity);
@@ -136,7 +153,25 @@ export default function InvoiceDashboard() {
     console.log('requestClient', requestCreateParameters);
     console.log(requestClient);
     setCount(count + 1);
+  };
 
+  const handleDropdownSelect = (token: string) => {
+    setSelectedToken(token);
+    setShowDropdown(false);
+    if (selectedCollateralToken) {
+      handleDeposit(token, selectedCollateralToken);
+    } else {
+      console.error('Collateral token is null');
+    }
+  };
+
+  const handleActionClick = (collateralToken: string) => {
+    setSelectedCollateralToken(collateralToken);
+    setShowDropdown(true);
+  };
+
+  const handleCancelDropdown = () => {
+    setShowDropdown(false);
   };
 
   useEffect(() => {
@@ -149,9 +184,8 @@ export default function InvoiceDashboard() {
           value: wallet?.accounts[0].address.toLowerCase() as string,
         })
         .then((requests) => {
-          
           const requestDatas = requests.map((request) => request.getData());
-          console.log('requestDatas',requestDatas);
+          console.log('requestDatas', requestDatas);
           const filteredRequests = requestDatas.filter(
             (request) =>
               request.contentData.requestType === 'borrow' &&
@@ -161,7 +195,7 @@ export default function InvoiceDashboard() {
                   wallet.accounts[0].address.toLowerCase())
           );
           console.log('filteredRequests', filteredRequests);
-          
+
           const active = filteredRequests.filter(
             (invoice) =>
               invoice.payee?.value.toLowerCase() ===
@@ -175,24 +209,26 @@ export default function InvoiceDashboard() {
           );
           console.log('size:', previous.length);
           let maxCreationDate;
-          if(previous.length === 0){
-            maxCreationDate=0;
-          }else{
+          if (previous.length === 0) {
+            maxCreationDate = 0;
+          } else {
             const maxCreationDateObject = previous.reduce((max, current) => {
-              return (current.contentData.creationDate > max.contentData.creationDate) ? current : max;
+              return current.contentData.creationDate >
+                max.contentData.creationDate
+                ? current
+                : max;
             }, previous[0]);
             maxCreationDate = maxCreationDateObject.contentData.creationDate;
-            console.log("maxCreationDate", maxCreationDate); 
+            console.log('maxCreationDate', maxCreationDate);
           }
-          
 
           const updatedActive = active.filter(
             (activeRequest) =>
               activeRequest.contentData.creationDate > maxCreationDate
           );
-          console.log("active" , active);
-          console.log("previous" , previous);
-          console.log("updatedActive" , updatedActive);
+          console.log('active', active);
+          console.log('previous', previous);
+          console.log('updatedActive', updatedActive);
 
           setActiveRequests(updatedActive);
           setPreviousRequests(previous);
@@ -298,7 +334,11 @@ export default function InvoiceDashboard() {
                       {invoice.amount}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
-                      {tokenOptions[invoice.collateralToken as keyof typeof tokenOptions]}
+                      {
+                        tokenOptions[
+                          invoice.collateralToken as keyof typeof tokenOptions
+                        ]
+                      }
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.collateralAmount}
@@ -307,7 +347,9 @@ export default function InvoiceDashboard() {
                       {activeTab === 'active' ? (
                         <button
                           className='px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105'
-                          onClick={() => handleDeposit(invoice.token,invoice.collateralToken)}
+                          onClick={() =>
+                            handleActionClick(invoice.collateralToken)
+                          }
                         >
                           {invoice.actionType}
                         </button>
@@ -323,6 +365,36 @@ export default function InvoiceDashboard() {
             </tbody>
           </table>
         </div>
+        {showDropdown && (
+          <div className='fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50'>
+            <div className='w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5'>
+              <div
+                className='py-1'
+                role='menu'
+                aria-orientation='vertical'
+                aria-labelledby='options-menu'
+              >
+                {Object.keys(tokenOptions).map((token) => (
+                  <button
+                    key={token}
+                    className='w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    role='menuitem'
+                    onClick={() => handleDropdownSelect(token)}
+                  >
+                    {tokenOptions[token as keyof typeof tokenOptions]}
+                  </button>
+                ))}
+                <button
+                  className='w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  role='menuitem'
+                  onClick={handleCancelDropdown}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
