@@ -23,6 +23,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## Usage
 
 - You can lend and borrow tokens on the basis of real time market data using the frontend GUI (**Graphical User Interface**) or the one deployed [Link](https://bank-on-request.vercel.app/).
+- A user can easily take the loan of ERC20 token available on our application for any collateral token, The amount of collateral token is decided by fetching the live price of token by using oracle .He/she had to give the constant interest of 12% of amount borrow.A user can select the installment period and specify the number of installments.A request would be automatically created for a user demanding the repayment of loan to smart contract.A user can go to dashboard and can watch all the loan installments he/she had to pay.Either he/she can do batch payment or go to individual request and pay the request with EthSepolia, ERC20token and ERC777 stream payment method.Everytime he/she borrows or repay the loan the invoice pdf is generated automatically.
+- A user can easily lend any ERC20 token available on our application and get the constant interest of 8%. .User can go to dashboard and with the lended amount anytime he wants.Also he would get the invoice everytime he/she lend or withdraws some tokens to or from smart contract
 
 
 ## Implementation Details
