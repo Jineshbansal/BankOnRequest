@@ -1,4 +1,3 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 # BankOnRequest
 BankOnRequest is a decentralised bank application built on top of sepolia blockchain and request network.In this bank anybody can lend anytoken and can earn the constant interest of 8% on that token. Also anybody can borrow any token for the collateral of any other token for the 12% interest on the borrowing token on the basis of price feed provided by Oracle.The borrower can do the payment in native currency,ERC20 currency and ERC777 stream payment.User can track their transactions with the help of request network.
 ## Getting Started
