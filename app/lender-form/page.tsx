@@ -20,7 +20,6 @@ import Spinner from '@/components/spinner';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import InvoiceDocument from '@/components/InvoiceDocumentLender';
 
-
 const App = () => {
   const [lendingToken, setLendingToken] = useState('');
   const [lendingAmount, setLendingAmount] = useState('');
@@ -155,7 +154,11 @@ const App = () => {
     console.log('payref', payref);
     const contract = new ethers.Contract(contractAddress, contractABI, signer);
     setLoadingMessage('Depositing funds...');
-    const data = await contract.depositcallTransferWithFee(loanAmount, payref,lendingToken);
+    const data = await contract.depositcallTransferWithFee(
+      loanAmount,
+      payref,
+      lendingToken
+    );
     await data.wait();
     setLoading(false);
     setLendingToken('');
@@ -352,36 +355,35 @@ const App = () => {
                 Thank you for using BankOnRequest!
               </p>
               <p className='text-gray-600'>
-                Contact us at mkaran4249@gmail.com
+                Contact us at jinesh4249@gmail.com
               </p>
             </div>
           </div>
-          {
-            isBrowser && (
-              <PDFDownloadLink
+          {isBrowser && (
+            <PDFDownloadLink
               document={
                 <InvoiceDocument
-                issuedDate={issuedDate}
-                payerIdentity={payerIdentity}
-                firstName={firstName}
-                lastName={lastName}
-                email={email}
-                address={address}
-                city={city}
-                postalCode={postalCode}
-                country={country}
-                lendingToken={lendingToken}
-                lendingAmount={lendingAmount}
-                description={description}
-                tokenOptions={tokenOptions}
+                  issuedDate={issuedDate}
+                  payerIdentity={payerIdentity}
+                  firstName={firstName}
+                  lastName={lastName}
+                  email={email}
+                  address={address}
+                  city={city}
+                  postalCode={postalCode}
+                  country={country}
+                  lendingToken={lendingToken}
+                  lendingAmount={lendingAmount}
+                  description={description}
+                  tokenOptions={tokenOptions}
                 />
               }
               fileName='invoice_lend.pdf'
               className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
               style={{ backgroundColor: '#0bb489' }}
-              >
-            Download Invoice
-          </PDFDownloadLink>
+            >
+              Download Invoice
+            </PDFDownloadLink>
           )}
         </div>
       </div>

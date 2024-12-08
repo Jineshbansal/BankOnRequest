@@ -25,6 +25,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       style={{ filter: 'invert(0)' }}
       className={poppins.className}
     >
+      <head>
+        <title>BankOnRequest</title>
+      </head>
       <body>
         <Web3OnboardProvider web3Onboard={web3Onboard}>
           <WagmiProvider config={wagmiConfig}>

@@ -71,7 +71,7 @@ const App = () => {
     };
     setIssuedDate(new Date().toLocaleDateString(undefined, options));
   }, []);
-  const durInSecond =(duration: string) => {
+  const durInSecond = (duration: string) => {
     switch (duration) {
       case 'minutes':
         return 60;
@@ -249,7 +249,15 @@ const App = () => {
     setLoadingMessage('transferring collateral tokens and borrowing tokens...');
     console.log('borrowingToken', borrowingToken);
     console.log('collateralToken', collateralToken);
-    await contract.borrowcallTransferWithFee(loanAmount, giveAmount, payref,borrowingToken,collateralToken,durInSecond(duration),totalInstallments);
+    await contract.borrowcallTransferWithFee(
+      loanAmount,
+      giveAmount,
+      payref,
+      borrowingToken,
+      collateralToken,
+      durInSecond(duration),
+      totalInstallments
+    );
     // await data.wait();
     // console.log('payerIdentity', payerIdentity);
     // console.log('payeeIdentity', payeeIdentity);
@@ -261,7 +269,6 @@ const App = () => {
 
   return (
     <div className='w-[100vw] h-[100vh] overflow-x-hidden overflow-y-scroll no-scrollbar'>
-
       <Navbar />
       {loading && (
         <div className='fixed inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-75 z-50'>
@@ -521,36 +528,36 @@ const App = () => {
                 Thank you for using BankOnRequest!
               </p>
               <p className='text-gray-600'>
-                Contact us at mkaran4249@gmail.com
+                Contact us at jinesh4249@gmail.com
               </p>
             </div>
           </div>
           {isBrowser && (
             <PDFDownloadLink
-            document={
-              <InvoiceDocument
-              issuedDate={issuedDate}
-              payeeIdentity={payeeIdentity} 
-              firstName={firstName}
-              lastName={lastName}
-              email={email}
-              address={address}
-              city={city}
-              postalCode={postalCode}
-              country={country}
-              borrowingToken={borrowingToken} 
-              borrowingAmount={borrowingAmount} 
-              description={description}
-              tokenOptions={tokenOptions}
-              />
-            }
-            fileName='invoice_borrow.pdf'
-            className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
-            style={{ backgroundColor: '#0bb489' }}
+              document={
+                <InvoiceDocument
+                  issuedDate={issuedDate}
+                  payeeIdentity={payeeIdentity}
+                  firstName={firstName}
+                  lastName={lastName}
+                  email={email}
+                  address={address}
+                  city={city}
+                  postalCode={postalCode}
+                  country={country}
+                  borrowingToken={borrowingToken}
+                  borrowingAmount={borrowingAmount}
+                  description={description}
+                  tokenOptions={tokenOptions}
+                />
+              }
+              fileName='invoice_borrow.pdf'
+              className='absolute bottom-10 right-10 py-2 px-4 text-white rounded'
+              style={{ backgroundColor: '#0bb489' }}
             >
-            Download Invoice
-          </PDFDownloadLink>
-        )}
+              Download Invoice
+            </PDFDownloadLink>
+          )}
         </div>
       </div>
     </div>
