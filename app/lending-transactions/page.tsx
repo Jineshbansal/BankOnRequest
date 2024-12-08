@@ -25,7 +25,7 @@ export default function InvoiceDashboard() {
   const [previousRequests, setPreviousRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-
+  const [count, setCount] = useState(1);
   const contractAddress = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '';
 
   const handleWithdraw = async (lendingToken:string) => {
@@ -58,7 +58,7 @@ export default function InvoiceDashboard() {
         requestInfo: {
           currency: {
             type: Types.RequestLogic.CURRENCY.ERC20,
-            value: '0x1d87Fc9829d03a56bdb5ba816C2603757f592D82',
+            value: lendingToken,
             network: 'sepolia' as CurrencyTypes.ChainName,
           },
           expectedAmount: lendAmount.toString(),
@@ -85,7 +85,7 @@ export default function InvoiceDashboard() {
           creationDate: Utils.getCurrentTimestampInSecond(),
           requestType: 'lend',
           reason: 'withdraw',
-          dueDate: '2023.06.16',
+          dueDate: '2025.06.16',
         },
         signer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -135,12 +135,14 @@ export default function InvoiceDashboard() {
       setLoading(false);
       setLoadingMessage('');
     }
+    setCount((prevCount) => prevCount + 1);
   };
 
   useEffect(() => {
     if (wallet) {
       setLoading(true);
       setLoadingMessage('Fetching requests...');
+      
       requestNetwork
         ?.fromIdentity({
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -152,9 +154,9 @@ export default function InvoiceDashboard() {
             (request) =>
               request.contentData.requestType === 'lend' &&
               (request.payer?.value.toLowerCase() ===
-                wallet.accounts[0].address.toLowerCase() ||
+              (process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '').toLowerCase() ||
                 request.payee?.value.toLowerCase() ===
-                  wallet.accounts[0].address.toLowerCase())
+                (process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '').toLowerCase())
           );
           console.log('karan', requestDatas);
           console.log('filteredRequests', filteredRequests);
@@ -171,24 +173,29 @@ export default function InvoiceDashboard() {
               wallet.accounts[0].address.toLowerCase()
           );
           console.log('size:', previous.length);
-          let maxCreationDate;
-          if(previous.length === 0){
-            maxCreationDate=0;
-          }else{
-            const maxCreationDateObject = previous.reduce((max, current) => {
-              return (current.contentData.creationDate > max.contentData.creationDate) ? current : max;
-            }, previous[0]);
-            maxCreationDate = maxCreationDateObject.contentData.creationDate;
-            console.log("maxCreationDate", maxCreationDate); 
-          }
+
+          const map = previous.reduce((acc, current) => {
+            const key = current.currencyInfo.value;
+            const creationDate = current.contentData.creationDate;
           
+            if (!acc.has(key) || creationDate > acc.get(key)) {
+              acc.set(key, creationDate);
+            }
+          
+            return acc;
+          }, new Map());
+          
+          const result = Array.from(map.entries());
+          console.log("Result:", result);
+        
 
           console.log('active', active);
           console.log('previous', previous);
 
           const updatedActive = active.filter(
             (activeRequest) =>
-              activeRequest.contentData.creationDate > maxCreationDate
+              map.get(activeRequest.currencyInfo.value) === undefined || 
+              activeRequest.contentData.creationDate > map.get(activeRequest.currencyInfo.value)
           );
 
           console.log('updatedActive', updatedActive);
@@ -201,7 +208,7 @@ export default function InvoiceDashboard() {
           setLoadingMessage('');
         });
     }
-  }, [wallet, requestNetwork]);
+  }, [wallet, requestNetwork,count]);
 
   const dataSource = (
     activeTab === 'active' ? activeRequests : previousRequests
@@ -215,6 +222,7 @@ export default function InvoiceDashboard() {
     requestId: `${invoice.requestId.slice(0, 4)}...${invoice.requestId.slice(
       -3
     )}`,
+    orgrequestId: invoice.requestId,
   }));
 
   return (
@@ -273,6 +281,7 @@ export default function InvoiceDashboard() {
                   amount: string;
                   actionType: string;
                   requestId: string;
+                  orgrequestId: string;
                 }) => (
                   <tr
                     key={invoice.key}
@@ -282,7 +291,9 @@ export default function InvoiceDashboard() {
                       {invoice.created}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
-                      {invoice.requestId}
+                      <a href={`https://scan.request.network/request/${invoice.orgrequestId}`}>
+                        {invoice.requestId}
+                      </a>
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.paymentNetwork}

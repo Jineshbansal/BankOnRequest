@@ -14,7 +14,7 @@ import {
 } from '@requestnetwork/request-client.js';
 import { Web3SignatureProvider } from '@requestnetwork/web3-signature';
 import checkAndApproveToken from '@/utils/checkAndApproveToken';
-import tokenOptions from '@/utils/tokenOptions';
+import tokenOptions2 from '@/utils/tokenOptions2';
 import Spinner from '@/components/spinner';
 
 export default function InvoiceDashboard() {
@@ -41,120 +41,155 @@ export default function InvoiceDashboard() {
     console.log('deposit');
     setLoading(true);
     setLoadingMessage('checking details of loan...');
-    const provider = new providers.Web3Provider(window.ethereum);
-    const payerIdentity = wallet?.accounts[0].address;
-    const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
-    const loanAmount = await contract.principal_amount_borrow(
-      borrowingToken,
-      collateralToken
-    );
-    const loan = await contract.getLoan(
-      payerIdentity,
-      borrowingToken,
-      collateralToken
-    );
-    if (loanAmount == 0) {
-      alert('you donot loan any money from us');
-      return;
-    }
-    setLoadingMessage('Creating repay loan request...');
-    console.log('borrowing', borrowingToken);
-    console.log('loanAmount', loan);
-    const requestCreateParameters = {
-      requestInfo: {
-        currency: {
-          type: Types.RequestLogic.CURRENCY.ERC20,
-          value: borrowingToken,
-          network: 'sepolia',
+    try
+    {
+
+      const provider = new providers.Web3Provider(window.ethereum);
+      const payerIdentity = wallet?.accounts[0].address;
+      const payeeIdentity = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS;
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      const loanAmount = await contract.principal_amount_borrow(
+        borrowingToken,
+        collateralToken
+      );
+      const loan = await contract.getLoan(
+        payerIdentity,
+        borrowingToken,
+        collateralToken
+      );
+      console.log('borrowing', borrowingToken);
+      console.log('collateral', collateralToken);
+      if (loanAmount == 0) {
+        alert('you donot loan any money from us');
+        return;
+      }
+      setLoadingMessage('Creating repay loan request...');
+      
+      console.log('loanAmount', loan);
+      const requestCreateParameters = {
+        requestInfo: {
+          currency: {
+            type: Types.RequestLogic.CURRENCY.ERC20,
+            value: borrowingToken,
+            network: 'sepolia',
+          },
+          expectedAmount: loanAmount.toString(),
+          payee: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: payeeIdentity ?? '',
+          },
+          payer: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: payerIdentity ?? '',
+          },
+          timestamp: Utils.getCurrentTimestampInSecond(),
         },
-        expectedAmount: loanAmount.toString(),
-        payee: {
-          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-          value: payeeIdentity ?? '',
+        paymentNetwork: {
+          id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
+          parameters: {
+            paymentNetworkName: 'sepolia',
+            paymentAddress: payeeIdentity ?? '',
+            feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
+            feeAmount: '0',
+          },
         },
-        payer: {
+        contentData: {
+          creationDate: Utils.getCurrentTimestampInSecond(),
+          requestType: 'borrow',
+          reason: 'deposit',
+          dueDate: '2025.06.16',
+          collateralToken: collateralToken,
+          collateralAmount: loan.collateralAmount.toString(),
+        },
+        signer: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: payerIdentity ?? '',
         },
-        timestamp: Utils.getCurrentTimestampInSecond(),
-      },
-      paymentNetwork: {
-        id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
-        parameters: {
-          paymentNetworkName: 'sepolia',
-          paymentAddress: payeeIdentity ?? '',
-          feeAddress: '0xEee3f751e7A044243a407F14e43f69236e12f748',
-          feeAmount: '0',
+      };
+      console.log('requestCreateParameters', requestCreateParameters);
+      const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
+      const requestClient = new RequestNetwork({
+        nodeConnectionConfig: {
+          baseURL: 'https://sepolia.gateway.request.network/',
         },
-      },
-      contentData: {
-        creationDate: Utils.getCurrentTimestampInSecond(),
-        requestType: 'borrow',
-        reason: 'deposit',
-        dueDate: '2025.06.16',
-        collateralToken: collateralToken,
-        collateralAmount: loan.collateralAmount.toString(),
-      },
-      signer: {
-        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-        value: payerIdentity ?? '',
-      },
-    };
-    console.log('requestCreateParameters', requestCreateParameters);
-    const web3SignatureProvider = new Web3SignatureProvider(provider.provider);
-    const requestClient = new RequestNetwork({
-      nodeConnectionConfig: {
-        baseURL: 'https://sepolia.gateway.request.network/',
-      },
-      signatureProvider: web3SignatureProvider,
-    });
+        signatureProvider: web3SignatureProvider,
+      });
 
-    const request = await requestClient.createRequest(requestCreateParameters);
-    setLoadingMessage('Waiting for Confirmation...');
-    console.log('request', request);
-    const confirmedRequestData = await request.waitForConfirmation();
-    const requestID = confirmedRequestData.requestId;
-    console.log('requestID', requestID);
-    const salt =
-      confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
-        .salt;
-    const paymentReference = PaymentReferenceCalculator.calculate(
-      requestID,
-      salt,
-      payeeIdentity ?? ''
-    );
-    console.log('paymentReferenceCalculator', paymentReference);
-    console.log('confirmed Request Data:', confirmedRequestData);
-    console.log('Request Parameters:', requestCreateParameters);
-    setLoadingMessage('Checking and Approving Token...');
-    await checkAndApproveToken(
-      borrowingToken,
-      payerIdentity ?? '',
-      provider,
-      loanAmount.toString() + '0'
-    );
-    const payref = '0x' + paymentReference;
-    console.log('payref', payref);
-    const data = await contract.repayLoan(
-      payref,
-      borrowingToken,
-      collateralToken
-    );
-    await data.wait();
-    console.log('payerIdentity', payerIdentity);
-    console.log('payeeIdentity', payeeIdentity);
-    console.log('data', data.hash);
-    setLoadingMessage('Deposit Successful');
-    setLoading(false);
-    console.log(PaymentReferenceCalculator);
-    console.log(checkAndApproveToken);
-    console.log('requestClient', requestCreateParameters);
-    console.log(requestClient);
-    setCount(count + 1);
+      const request = await requestClient.createRequest(requestCreateParameters);
+      setLoadingMessage('Waiting for Confirmation...');
+      console.log('request', request);
+      const confirmedRequestData = await request.waitForConfirmation();
+      const requestID = confirmedRequestData.requestId;
+      console.log('requestID', requestID);
+      const salt =
+        confirmedRequestData.extensions['pn-erc20-fee-proxy-contract'].values
+          .salt;
+      const paymentReference = PaymentReferenceCalculator.calculate(
+        requestID,
+        salt,
+        payeeIdentity ?? ''
+      );
+      console.log('paymentReferenceCalculator', paymentReference);
+      console.log('confirmed Request Data:', confirmedRequestData);
+      console.log('Request Parameters:', requestCreateParameters);
+      setLoadingMessage('Checking and Approving Token...');
+      await checkAndApproveToken(
+        borrowingToken,
+        payerIdentity ?? '',
+        provider,
+        loanAmount.toString() + '0'
+      );
+      const payref = '0x' + paymentReference;
+      console.log('payref', payref);
+      if(borrowingToken == '0x0000000000000000000000000000000000000000'){
+        const data = await contract.repayLoanWithEthereum(
+          payref,
+          borrowingToken,
+          collateralToken,
+          {
+            value: (loanAmount/10).toString(),
+          }
+
+        );
+        await data.wait();
+
+        setLoadingMessage('Deposit Successful');
+        setLoading(false);
+        setCount(count + 1);
+        return;
+      }
+
+      if(borrowingToken == '0x0000000000000000000000000000000000000001'){
+
+      }
+      const data = await contract.repayLoan(
+        payref,
+        borrowingToken,
+        collateralToken
+      );
+      await data.wait();
+      console.log('payerIdentity', payerIdentity);
+      console.log('payeeIdentity', payeeIdentity);
+      console.log('data', data.hash);
+    
+      setLoadingMessage('Deposit Successful');
+    }
+    catch (error) {
+    console.error('Error during withdrawal:', error);
+    alert('An error occurred during withdrawal.');
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
+    
+
+    console.log('count', count);
+    setCount((prevCount) => prevCount + 1);
+    console.log('count', count);
   };
 
+  
   const handleDropdownSelect = (token: string) => {
     setSelectedToken(token);
     setShowDropdown(false);
@@ -178,6 +213,7 @@ export default function InvoiceDashboard() {
     if (wallet) {
       setLoading(true);
       setLoadingMessage('Fetching requests...');
+      console.log()
       requestNetwork
         ?.fromIdentity({
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
@@ -186,13 +222,15 @@ export default function InvoiceDashboard() {
         .then((requests) => {
           const requestDatas = requests.map((request) => request.getData());
           console.log('requestDatas', requestDatas);
+          console.log('wallet address', wallet?.accounts[0].address.toLowerCase());
           const filteredRequests = requestDatas.filter(
             (request) =>
               request.contentData.requestType === 'borrow' &&
-              (request.payer?.value.toLowerCase() ===
-                wallet.accounts[0].address.toLowerCase() ||
-                request.payee?.value.toLowerCase() ===
-                  wallet.accounts[0].address.toLowerCase())
+              ( 
+                request.payee?.value.toLowerCase()===(process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '').toLowerCase()
+                ||
+                request.payer?.value.toLowerCase() ===(process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || '').toLowerCase()
+              )
           );
           console.log('filteredRequests', filteredRequests);
 
@@ -208,24 +246,30 @@ export default function InvoiceDashboard() {
               wallet.accounts[0].address.toLowerCase()
           );
           console.log('size:', previous.length);
-          let maxCreationDate;
-          if (previous.length === 0) {
-            maxCreationDate = 0;
-          } else {
-            const maxCreationDateObject = previous.reduce((max, current) => {
-              return current.contentData.creationDate >
-                max.contentData.creationDate
-                ? current
-                : max;
-            }, previous[0]);
-            maxCreationDate = maxCreationDateObject.contentData.creationDate;
-            console.log('maxCreationDate', maxCreationDate);
-          }
+          const map = previous.reduce((acc, current) => {
+            const key = `${current.currencyInfo.value}-${current.contentData.collateralToken}`;
+            const creationDate = current.contentData.creationDate;
+          
+            // If the key doesn't exist in the map, or the new creationDate is larger, update the map
+            if (!acc.has(key) || creationDate > acc.get(key)) {
+              acc.set(key, creationDate);
+            }
+          
+            return acc;
+          }, new Map());
+          
+          const result = Array.from(map.entries());
+          console.log("Result:", result);
+          
 
-          const updatedActive = active.filter(
-            (activeRequest) =>
-              activeRequest.contentData.creationDate > maxCreationDate
-          );
+          const updatedActive = active.filter((activeRequest) => {
+            const key = `${activeRequest.currencyInfo.value}-${activeRequest.contentData.collateralToken}`;
+            const maxCreationDateForPair = map.get(key);
+          
+            // Check if maxCreationDateForPair exists in the map and compare the creationDate
+            return maxCreationDateForPair ? activeRequest.contentData.creationDate > maxCreationDateForPair : true;
+          });
+          
           console.log('active', active);
           console.log('previous', previous);
           console.log('updatedActive', updatedActive);
@@ -251,6 +295,7 @@ export default function InvoiceDashboard() {
     requestId: `${invoice.requestId.slice(0, 4)}...${invoice.requestId.slice(
       -3
     )}`,
+    orgrequestId: invoice.requestId,
   }));
 
   return (
@@ -313,6 +358,7 @@ export default function InvoiceDashboard() {
                   collateralAmount: string;
                   actionType: string;
                   requestId: string;
+                  orgrequestId: string;
                 }) => (
                   <tr
                     key={invoice.key}
@@ -322,21 +368,23 @@ export default function InvoiceDashboard() {
                       {invoice.created}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
-                      {invoice.requestId}
+                      <a href={`https://scan.request.network/request/${invoice.orgrequestId}`}>
+                        {invoice.requestId}
+                      </a>
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.paymentNetwork}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
-                      {tokenOptions[invoice.token as keyof typeof tokenOptions]}
+                      {tokenOptions2[invoice.token as keyof typeof tokenOptions2]}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {invoice.amount}
                     </td>
                     <td className='py-2 px-4 border-b text-left'>
                       {
-                        tokenOptions[
-                          invoice.collateralToken as keyof typeof tokenOptions
+                        tokenOptions2[
+                          invoice.collateralToken as keyof typeof tokenOptions2
                         ]
                       }
                     </td>
@@ -374,14 +422,14 @@ export default function InvoiceDashboard() {
                 aria-orientation='vertical'
                 aria-labelledby='options-menu'
               >
-                {Object.keys(tokenOptions).map((token) => (
+                {Object.keys(tokenOptions2).map((token) => (
                   <button
                     key={token}
                     className='w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                     role='menuitem'
                     onClick={() => handleDropdownSelect(token)}
                   >
-                    {tokenOptions[token as keyof typeof tokenOptions]}
+                    {tokenOptions2[token as keyof typeof tokenOptions2]}
                   </button>
                 ))}
                 <button
