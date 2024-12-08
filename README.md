@@ -32,7 +32,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 
 ## Demo Video Link
-Click [here]() to see a working demo!
+Click [here](https://www.loom.com/share/54b09e46543d4cf3b81b245e9f5d3186?sid=b49d1343-753c-4ad4-9fa4-2147cb774593) to see a working demo!
 
 ## Learn More
 
